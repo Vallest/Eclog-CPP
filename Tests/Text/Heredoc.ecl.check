@@ -1,0 +1,16 @@
+object
+key "empty"
+value "" type string
+key "wsp"
+value "(\t \t )\n" type string
+key "one empty line"
+value "\n" type string
+key "key\n"
+value "string\n" type string
+key "Spoon Boy"
+value "  Do not try and bend the spoon, that's impossible.\n  Instead, only try to realize the truth... there is no\n  spoon. Then you'll see that it is not the spoon that\n  bends, it is only yourself.\n" type string
+key "html"
+value "<!DOCTYPE html>\n<html>\n<body>\n\t<h2>Unordered List with Square Bullets</h2>\n\n\t<ul style=\"list-style-type:square;\">\n\t\t<li>Coffee</li>\n\t\t<li>Tea</li>\n\t\t<li>Milk</li>\n\t</ul>\n\n</body>\n</html>\n" type string
+key "markdown"
+value "Heading\n=======\n\n## Sub-heading\n\nParagraphs are separated\nby a blank line.\n\nTwo spaces at the end of a line  \nproduces a line break.\n\nText attributes _italic_, \n**bold**, `monospace`.\n\nHorizontal rule:\n\n---\n\nBullet list:\n\n  * apples\n  * oranges\n  * pears\n\nNumbered list:\n\n  1. wash\n  2. rinse\n  3. repeat\n\n" type string
+object_end

@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="Common64"
+	OutputDirectory="..\..\Bin\"
+	IntermediateDirectory="..\..\Intermediate\$(ProjectName)_Win64_VC8_$(ConfigurationName)\"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="..\..\..\Include;"
+		PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;_WIN32_WINNT=0x500"
+		WarningLevel="4"
+	/>
+	<Tool
+		Name="VCLinkerTool"
+		OutputFile="$(OutDir)\$(ProjectName)64.exe"
+		GenerateDebugInformation="true"
+		ProgramDatabaseFile="..\..\Debug\$(ProjectName)_Win64_VC8_$(ConfigurationName)\$(ProjectName).pdb"
+	/>
+</VisualStudioPropertySheet>

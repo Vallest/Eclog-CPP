@@ -1,0 +1,37 @@
+object
+key "empty"
+object
+object_end
+key "object"
+object
+key "empty"
+value "" type string
+key "string"
+value "Hello World!" type string
+key "string_2"
+value "The quick brown fox jumps over the lazy dog." type string
+key "digits"
+value "0123456789" type string
+key "symbols"
+value "!@#$%^&*()_+-={}[]" type string
+key "utf8"
+value "你好，世界！" type string
+key "escape"
+value "\\\"\b\f\n\r\t" type string
+key "unicode_escape_4"
+value "文字" type string
+key "surrogate"
+value "𐐷🌉" type string
+object_end
+key "config"
+object
+key "timeout"
+value 90 type number info none
+key "ip-address"
+value "127.0.0.1" type string
+key "config.cipher"
+value "aes256-ctr" type string
+key "_length_"
+value 4096 type number info none
+object_end
+object_end

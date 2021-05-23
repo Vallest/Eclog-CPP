@@ -1,0 +1,6 @@
+object
+key "a"
+value true type boolean
+key "b"
+value false type boolean
+object_end

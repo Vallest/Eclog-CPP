@@ -1,0 +1,10 @@
+object
+key "timeout"
+value 90 type number info none
+key "ip-address"
+value "127.0.0.1" type string
+key "config.cipher"
+value "aes256-ctr" type string
+key "_length_"
+value 4096 type number info none
+object_end

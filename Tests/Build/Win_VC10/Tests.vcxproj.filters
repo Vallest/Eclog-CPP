@@ -1,0 +1,396 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Eclog">
+      <UniqueIdentifier>{80d6ce50-6a64-4051-8535-afc1074b8d21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Eclog\Include">
+      <UniqueIdentifier>{e6baf509-2518-440f-8667-6d1a0b6bbf51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Eclog\Include\Detail">
+      <UniqueIdentifier>{6a32b705-f048-4fc6-bd28-26ccbda6d639}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Eclog\Source">
+      <UniqueIdentifier>{0cd9f5c4-33f2-4199-84db-ec48165b91c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{fa3cdf3b-6e07-4ef2-a55a-0493c0c7f97a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Source\dtoa.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Parse.cpp">
+      <Filter>Eclog\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Renderer.cpp">
+      <Filter>Eclog\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\UTF8Decoder.cpp">
+      <Filter>Eclog\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\UTF8Encoder.cpp">
+      <Filter>Eclog\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\DoubleConversion.cpp">
+      <Filter>Eclog\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Error.cpp">
+      <Filter>Eclog\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Source\Null.cpp">
+      <Filter>Eclog\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\DebugObject.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\DocumentTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\DoubleConversionTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Main.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\NumberTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\ParseTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\ParsingBufferTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\PODArrayTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\RendererTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\UnitTesting.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\UTF8EncodingTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\VectorTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\ByteArrayTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\cstringTests.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\DebugAllocator.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Assert.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\BigInteger.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Binary64.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\BooleanNodeImpl.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ByteArray.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\CharType.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\CompilerSpecific.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Context.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\DocumentParseHandler.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\DocumentRenderer.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\DoubleConversion.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\InlineArray.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\InlineStack.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\IntegerConversion.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\KeyNodeImpl.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Limits.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\LinkedList.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Math128.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Memory.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NodeFactory.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NodePtr.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NonAssignable.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NonCopyable.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NullNodeImpl.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NumberNodeImpl.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ObjectNodeImpl.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Parse.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ParseHandler.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ParseHandlerAdapters.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ParsingBufferGuard.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\PODArray.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\RbTree.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Renderer.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\RendererState.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\SafeBool.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\StringDelimiter.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\StringNodeImpl.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\TypeTraits.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\UTF8Decoder.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\UTF8Encoder.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Utility.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Vector.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Algorithm.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ArrayNodeImpl.h">
+      <Filter>Eclog\Include\Detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Context.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\cstring.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Document.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\DynamicParsingBuffer.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\EmptyArrayTag.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\EmptyObjectTag.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Error.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\InplaceParsingBuffer.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\InputStream.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\IntTypes.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Key.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\KeyDesc.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\KeyNode.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Linebreak.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\MemoryInputStream.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\MemoryOutputStream.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Node.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\NodeType.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Null.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\NullNode.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Number.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\NumberDesc.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\NumberInfo.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\NumberNode.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ObjectDesc.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ObjectNode.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ObjectRenderer.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\OutputStream.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Parse.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ParsingBuffer.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Renderer.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\RendererConfig.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\RendererHandle.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\StdStreamInputStream.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\StdStreamOutputStream.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\StdStringOutputStream.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\StringDesc.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\StringNode.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\StringNotation.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\UTF8Decoder.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\UTF8Encoder.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Utility.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Value.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ValueDesc.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ValueNode.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ValueType.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\Allocator.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ArrayDesc.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ArrayNode.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\ArrayRenderer.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Include\Eclog\BooleanNode.h">
+      <Filter>Eclog\Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\DebugAllocator.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\DebugObject.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\DebugParseHandlers.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\IO.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\Random.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\UnitTesting.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

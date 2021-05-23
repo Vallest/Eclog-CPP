@@ -1,0 +1,25 @@
+object
+key "numbers"
+array
+value 0 type number info none
+value -0 type number info sign|neg
+value 1 type number info none
+value -1 type number info sign|neg
+value 123456789 type number info none
+value -123456789 type number info sign|neg
+value 0.0 type number info frac
+value -0.0 type number info sign|neg|frac
+value 1.0 type number info frac
+value -1.0 type number info sign|neg|frac
+value 1.10000002 type number info frac
+value -1.10000002 type number info sign|neg|frac
+value 3.14159265358979323846 type number info frac
+value -3.14159265358979323846 type number info sign|neg|frac
+value 1.7976931348623157e+308 type number info frac|exp
+value -2.2250738585072014e-308 type number info sign|neg|frac|exp
+value 1e0 type number info exp
+value -1e0 type number info sign|neg|exp
+value 1e100 type number info exp
+value -1e100 type number info sign|neg|exp
+array_end
+object_end

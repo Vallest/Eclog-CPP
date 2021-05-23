@@ -1,0 +1,64 @@
+object
+key "empty"
+array
+array_end
+key "strings"
+array
+value "" type string
+value "Hello World!" type string
+value "The quick brown fox jumps over the lazy dog." type string
+value "0123456789" type string
+value "!@#$%^&*()_+-={}[]" type string
+value "你好，世界！" type string
+value "\\/\"\b\f\n\r\t" type string
+value "文字" type string
+value "😍" type string
+value "𐐷🌉" type string
+array_end
+key "numbers"
+array
+value inf type number info inf
+value +inf type number info sign|inf
+value -inf type number info sign|neg|inf
+value nan type number info nan
+value +nan type number info sign|nan
+value -nan type number info sign|neg|nan
+value 0 type number info none
+value +0 type number info sign
+value -0 type number info sign|neg
+value 1 type number info none
+value +1 type number info sign
+value -1 type number info sign|neg
+value 123456789 type number info none
+value +123456789 type number info sign
+value -123456789 type number info sign|neg
+value 0.0 type number info frac
+value +0.0 type number info sign|frac
+value -0.0 type number info sign|neg|frac
+value 1.0 type number info frac
+value +1.0 type number info sign|frac
+value -1.0 type number info sign|neg|frac
+value 1.10000002 type number info frac
+value +1.10000002 type number info sign|frac
+value -1.10000002 type number info sign|neg|frac
+value 3.14159265358979323846 type number info frac
+value +3.14159265358979323846 type number info sign|frac
+value -3.14159265358979323846 type number info sign|neg|frac
+value +1.7976931348623157e+308 type number info sign|frac|exp
+value -2.2250738585072014e-308 type number info sign|neg|frac|exp
+value 1e0 type number info exp
+value +1e0 type number info sign|exp
+value -1e0 type number info sign|neg|exp
+value 1e100 type number info exp
+value +1e100 type number info sign|exp
+value -1e100 type number info sign|neg|exp
+array_end
+key "mixed"
+array
+value null type null
+value true type boolean
+value false type boolean
+value "Hello World!" type string
+value 3.14159265358979323846 type number info frac
+array_end
+object_end

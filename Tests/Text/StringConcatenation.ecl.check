@@ -1,0 +1,10 @@
+object
+key "empty"
+value "" type string
+key "string"
+value "Hello World!" type string
+key "string2"
+value "Do not try and bend the spoon, that's impossible.\nInstead, only try to realize the truth... there is no spoon. Then you'll see that it is not the spoon that bends, it is only yourself." type string
+key "string3"
+value "abcdef\nghi\n" type string
+object_end

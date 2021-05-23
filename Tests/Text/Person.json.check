@@ -1,0 +1,47 @@
+object
+key "firstName"
+value "John" type string
+key "lastName"
+value "Smith" type string
+key "isAlive"
+value true type boolean
+key "age"
+value 27 type number info none
+key "address"
+object
+key "streetAddress"
+value "21 2nd Street" type string
+key "city"
+value "New York" type string
+key "state"
+value "NY" type string
+key "postalCode"
+value "10021-3100" type string
+object_end
+key "phoneNumbers"
+array
+object
+key "type"
+value "home" type string
+key "number"
+value "212 555-1234" type string
+object_end
+object
+key "type"
+value "office" type string
+key "number"
+value "646 555-4567" type string
+object_end
+object
+key "type"
+value "mobile" type string
+key "number"
+value "123 456-7890" type string
+object_end
+array_end
+key "children"
+array
+array_end
+key "spouse"
+value null type null
+object_end

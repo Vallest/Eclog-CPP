@@ -1,0 +1,10 @@
+/Bin/*.exe
+/Bin/*.exp
+/Bin/*.iobj
+/Bin/*.ipdb
+/Bin/*.lib
+/Bin/*.ilk
+/Bin/Test
+
+/Intermediate
+/Debug

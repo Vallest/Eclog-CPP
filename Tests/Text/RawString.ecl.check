@@ -1,0 +1,16 @@
+object
+key "empty"
+value "" type string
+key "string"
+value "Hello World!" type string
+key "wsp"
+value "\t \t " type string
+key "utf8"
+value "你好，世界！" type string
+key "path"
+value "C:\\Program Files\\Internet Explorer" type string
+key "regex"
+value "<\\s*img[^>]+src\\s*=\\s*([\"'])(.*?)\\1[^>]*>" type string
+key "delimiter"
+value "@dd\"@\"d\"\"dd" type string
+object_end

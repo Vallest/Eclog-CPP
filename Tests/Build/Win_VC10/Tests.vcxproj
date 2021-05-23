@@ -1,0 +1,281 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{9A901962-D63D-4F98-B4D9-D2DE768CF52E}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Test</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="Common32.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="Common64.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="Common32.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="Common64.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\Source\DoubleConversion.cpp" />
+    <ClCompile Include="..\..\..\Source\Error.cpp" />
+    <ClCompile Include="..\..\..\Source\Null.cpp" />
+    <ClCompile Include="..\..\..\Source\Parse.cpp" />
+    <ClCompile Include="..\..\..\Source\Renderer.cpp" />
+    <ClCompile Include="..\..\..\Source\UTF8Decoder.cpp" />
+    <ClCompile Include="..\..\..\Source\UTF8Encoder.cpp" />
+    <ClCompile Include="..\..\Source\ByteArrayTests.cpp" />
+    <ClCompile Include="..\..\Source\cstringTests.cpp" />
+    <ClCompile Include="..\..\Source\DebugAllocator.cpp" />
+    <ClCompile Include="..\..\Source\DebugObject.cpp" />
+    <ClCompile Include="..\..\Source\DocumentTests.cpp" />
+    <ClCompile Include="..\..\Source\DoubleConversionTests.cpp" />
+    <ClCompile Include="..\..\Source\dtoa.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">IEEE_8087;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">IEEE_8087;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">IEEE_8087;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">IEEE_8087;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">TurnOffAllWarnings</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">TurnOffAllWarnings</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">TurnOffAllWarnings</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="..\..\Source\Main.cpp" />
+    <ClCompile Include="..\..\Source\NumberTests.cpp" />
+    <ClCompile Include="..\..\Source\ParseTests.cpp" />
+    <ClCompile Include="..\..\Source\ParsingBufferTests.cpp" />
+    <ClCompile Include="..\..\Source\PODArrayTests.cpp" />
+    <ClCompile Include="..\..\Source\RendererTests.cpp" />
+    <ClCompile Include="..\..\Source\UnitTesting.cpp" />
+    <ClCompile Include="..\..\Source\UTF8EncodingTests.cpp" />
+    <ClCompile Include="..\..\Source\VectorTests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\Include\Eclog\Allocator.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ArrayDesc.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ArrayNode.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ArrayRenderer.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\BooleanNode.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Context.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\cstring.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Algorithm.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ArrayNodeImpl.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Assert.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\BigInteger.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Binary64.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\BooleanNodeImpl.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ByteArray.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\CharType.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\CompilerSpecific.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Context.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\DocumentParseHandler.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\DocumentRenderer.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\DoubleConversion.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\InlineArray.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\InlineStack.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\IntegerConversion.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\KeyNodeImpl.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Limits.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\LinkedList.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Math128.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Memory.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NodeFactory.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NodePtr.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NonAssignable.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NonCopyable.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NullNodeImpl.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\NumberNodeImpl.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ObjectNodeImpl.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Parse.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ParseHandler.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ParseHandlerAdapters.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\ParsingBufferGuard.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\PODArray.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\RbTree.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Renderer.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\RendererState.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\SafeBool.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\StringDelimiter.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\StringNodeImpl.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\TypeTraits.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\UTF8Decoder.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\UTF8Encoder.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Utility.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Detail\Vector.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Document.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\DynamicParsingBuffer.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\EmptyArrayTag.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\EmptyObjectTag.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Error.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\InplaceParsingBuffer.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\InputStream.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\IntTypes.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Key.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\KeyDesc.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\KeyNode.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Linebreak.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\MemoryInputStream.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\MemoryOutputStream.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Node.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\NodeType.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Null.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\NullNode.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Number.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\NumberDesc.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\NumberInfo.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\NumberNode.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ObjectDesc.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ObjectNode.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ObjectRenderer.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\OutputStream.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Parse.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ParsingBuffer.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Renderer.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\RendererConfig.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\RendererHandle.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\StdStreamInputStream.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\StdStreamOutputStream.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\StdStringOutputStream.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\StringDesc.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\StringNode.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\StringNotation.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\UTF8Decoder.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\UTF8Encoder.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Utility.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\Value.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ValueDesc.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ValueNode.h" />
+    <ClInclude Include="..\..\..\Include\Eclog\ValueType.h" />
+    <ClInclude Include="..\..\Source\DebugAllocator.h" />
+    <ClInclude Include="..\..\Source\DebugObject.h" />
+    <ClInclude Include="..\..\Source\DebugParseHandlers.h" />
+    <ClInclude Include="..\..\Source\IO.h" />
+    <ClInclude Include="..\..\Source\Random.h" />
+    <ClInclude Include="..\..\Source\UnitTesting.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

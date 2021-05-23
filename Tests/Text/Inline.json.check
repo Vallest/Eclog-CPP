@@ -1,0 +1,38 @@
+object
+key "a"
+value null type null
+key "b"
+value true type boolean
+key "c"
+value false type boolean
+key "empty_object"
+object
+object_end
+key "config"
+object
+key "host"
+value "localhost" type string
+key "timeout"
+value 90 type number info none
+object_end
+key "object2"
+object
+key "str"
+value "Hello World!" type string
+key "color"
+value "blue" type string
+key "align"
+value "left" type string
+object_end
+key "numbers"
+array
+value 1 type number info none
+value 2 type number info none
+value 3 type number info none
+value 4 type number info none
+value 5 type number info none
+value 6 type number info none
+value 7 type number info none
+value 8 type number info none
+array_end
+object_end

@@ -1,0 +1,75 @@
+object
+key "object"
+object
+key "nested_object"
+object
+key "empty"
+value "" type string
+key "string"
+value "Hello World!" type string
+key "string_2"
+value "The quick brown fox jumps over the lazy dog." type string
+key "digits"
+value "0123456789" type string
+key "utf8"
+value "你好，世界！" type string
+object_end
+key "nested_array"
+array
+value inf type number info inf
+value nan type number info nan
+value 3.14159265358979323846 type number info frac
+value 1e0 type number info exp
+value 1e100 type number info exp
+array_end
+key "nested_object2"
+object
+key "nested_array2"
+array
+object
+key "nested_array3"
+array
+value "Hello World!" type string
+value true type boolean
+value 1.0 type number info frac
+value false type boolean
+array_end
+object_end
+array_end
+object_end
+object_end
+key "array"
+array
+object
+object_end
+array
+value null type null
+value true type boolean
+value false type boolean
+value "Hello World!" type string
+value 3.14159265358979323846 type number info frac
+object
+object_end
+array
+array_end
+object
+key "timeout"
+value 90 type number info none
+key "ip-address"
+value "127.0.0.1" type string
+key "config.cipher"
+value "aes256-ctr" type string
+key "_length_"
+value 4096 type number info none
+object_end
+array_end
+object
+key "empty"
+value "" type string
+key "string"
+value "Hello World!" type string
+key "utf8"
+value "你好，世界！" type string
+object_end
+array_end
+object_end
