@@ -247,7 +247,7 @@ namespace eclog {
 #define ECLOG_FAULT(Name, ...) \
 	ECLOG_THROW(eclog::Name##Exception, __VA_ARGS__)
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && _MSC_VER <= 1600
 	#define ECLOG_NOTHROW
 #else
 	#define ECLOG_NOTHROW throw()
