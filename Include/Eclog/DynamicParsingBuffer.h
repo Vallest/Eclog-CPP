@@ -20,13 +20,11 @@ namespace eclog {
 	template<typename Alloc>
 	class BasicDynamicParsingBuffer : public ParsingBuffer, private detail::NonCopyable {
 	private:
+		ECLOG_WARNING_PUSH
+		ECLOG_WARNING_IGNORE_USE_THIS_IN_INITIALIZER_LIST
 		class BytesBuffer : public OutputStream {
 		public:
-			BytesBuffer() :
-			ECLOG_WARNING_PUSH
-			ECLOG_WARNING_IGNORE_USE_THIS_IN_INITIALIZER_LIST
-			encoder_(*this)
-			ECLOG_WARNING_POP
+			BytesBuffer() : encoder_(*this)
 			{
 			}
 
@@ -72,6 +70,7 @@ namespace eclog {
 
 			detail::ByteArray<Alloc> bytes_;
 		};
+		ECLOG_WARNING_POP
 
 	public:
 		BasicDynamicParsingBuffer() : bytesBuffer_(0)

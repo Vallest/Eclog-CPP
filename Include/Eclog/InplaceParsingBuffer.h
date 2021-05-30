@@ -19,14 +19,11 @@ namespace eclog {
 
 	class InplaceParsingBuffer : public ParsingBuffer, private detail::NonCopyable {
 	private:
+		ECLOG_WARNING_PUSH
+		ECLOG_WARNING_IGNORE_USE_THIS_IN_INITIALIZER_LIST
 		class BytesBuffer : public OutputStream {
 		public:
-			BytesBuffer() :
-			ECLOG_WARNING_PUSH
-			ECLOG_WARNING_IGNORE_USE_THIS_IN_INITIALIZER_LIST
-			encoder_(*this),
-			ECLOG_WARNING_POP
-			buffer_(0), maxSize_(0), size_(0)
+			BytesBuffer() : encoder_(*this), buffer_(0), maxSize_(0), size_(0)
 			{
 			}
 
@@ -114,6 +111,7 @@ namespace eclog {
 			size_t maxSize_;
 			size_t size_;
 		};
+		ECLOG_WARNING_POP
 
 	public:
 		explicit InplaceParsingBuffer(void* buffer, size_t maxSize) :
