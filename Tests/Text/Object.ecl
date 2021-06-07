@@ -2,7 +2,7 @@ empty: {}
 
 object:
 {
-	empty: ""
+	"": ""
 	string: "Hello World!"
 	string_2: "The quick brown fox jumps over the lazy dog."
 	digits: "0123456789"

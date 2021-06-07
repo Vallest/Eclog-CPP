@@ -70,6 +70,31 @@ TEST_CASE("Renderer")
 		CHECK(text == "{}");
 	}
 
+	SUBCASE("Empty Key")
+	{
+		std::ostringstream oss;
+
+		eclog::StdStreamOutputStream stream(oss);
+
+		eclog::Renderer renderer(stream);
+
+		renderer.beginRootObject();
+		{
+			eclog::ObjectRenderer root(renderer);
+
+			root.renderMember("", eclog::null);
+		}
+		renderer.endRootObject();
+
+		renderer.close();
+
+		std::string text = oss.str();
+
+		CHECK(text ==
+			"\"\": null\n"
+		);
+	}
+
 	SUBCASE("Null")
 	{
 		std::ostringstream oss;

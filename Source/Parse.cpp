@@ -1059,12 +1059,6 @@ namespace eclog {
 				case state_key2:
 					if (!keyword)
 					{
-						if (ctx.buffer().str().empty())
-						{
-							ECLOG_ERROR(ParseError, line, column, pe_empty_key);
-							return;
-						}
-
 						handler.onKey(Key(ctx.buffer().str(), (StringNotation)stringNotation, delimiterSize), ec);
 						ECLOG_ON_ERROR(return);
 

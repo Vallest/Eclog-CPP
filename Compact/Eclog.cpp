@@ -119,9 +119,6 @@ namespace eclog {
 		case pe_empty_string_delimiter:
 			return "empty string delimiter";
 
-		case pe_empty_key:
-			return "empty key";
-
 		case pe_invalid_key:
 			return "invalid key";
 
@@ -3006,12 +3003,6 @@ namespace eclog {
 				case state_key2:
 					if (!keyword)
 					{
-						if (ctx.buffer().str().empty())
-						{
-							ECLOG_ERROR(ParseError, line, column, pe_empty_key);
-							return;
-						}
-
 						handler.onKey(Key(ctx.buffer().str(), (StringNotation)stringNotation, delimiterSize), ec);
 						ECLOG_ON_ERROR(return);
 

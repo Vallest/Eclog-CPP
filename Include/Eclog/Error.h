@@ -89,7 +89,6 @@ namespace eclog {
 		pe_string_delimiter_too_long,
 		pe_invalid_string_delimiter,
 		pe_empty_string_delimiter,
-		pe_empty_key,
 		pe_invalid_key,
 		pe_user_asked_for_termination,
 	};

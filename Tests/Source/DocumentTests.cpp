@@ -21,7 +21,16 @@ namespace {
 	std::string generateRandKey(Random& rand, int maxValue)
 	{
 		std::ostringstream os;
-		os << "_" << (maxValue > 0 ? rand.next() % maxValue + 1 : 0);
+
+		int n = (maxValue > 0 ? rand.next() % maxValue + 1 : 0);
+
+		if (n == 1) {
+			os << "";
+		}
+		else {
+			os << "_" << n;
+		}
+
 		return os.str();
 	}
 

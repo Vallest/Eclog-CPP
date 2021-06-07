@@ -286,7 +286,6 @@ namespace eclog {
 		pe_string_delimiter_too_long,
 		pe_invalid_string_delimiter,
 		pe_empty_string_delimiter,
-		pe_empty_key,
 		pe_invalid_key,
 		pe_user_asked_for_termination,
 	};
@@ -1945,7 +1944,7 @@ namespace eclog {
 		{
 			ECLOG_ASSERT(str);
 			ECLOG_ASSERT(notation);
-			ECLOG_ASSERT(delimiterSize <= 16 && str.size() > delimiterSize);
+			ECLOG_ASSERT(delimiterSize <= 16 && (str.size() == 0 || str.size() > delimiterSize));
 		}
 
 		StringNotation notation() const
@@ -3640,15 +3639,12 @@ namespace eclog {
 	public:
 		KeyDesc(const char* str) : str_(str), notation_(string_notation_unquoted)
 		{
-			if (str_.empty()) {
-				ECLOG_FAULT(InvalidArgument);
-			}
 		}
 
 		KeyDesc(cstring str, StringNotation notation = string_notation_unquoted, cstring delimiter = cstring()) :
 			str_(str), notation_(notation), delimiter_(delimiter)
 		{
-			if (str_.empty() || !detail::StringDelimiter::validate(delimiter_)) {
+			if (!detail::StringDelimiter::validate(delimiter_)) {
 				ECLOG_FAULT(InvalidArgument);
 			}
 		}

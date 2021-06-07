@@ -118,9 +118,6 @@ namespace eclog {
 		case pe_empty_string_delimiter:
 			return "empty string delimiter";
 
-		case pe_empty_key:
-			return "empty key";
-
 		case pe_invalid_key:
 			return "invalid key";
 

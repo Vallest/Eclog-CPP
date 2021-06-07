@@ -16,15 +16,12 @@ namespace eclog {
 	public:
 		KeyDesc(const char* str) : str_(str), notation_(string_notation_unquoted)
 		{
-			if (str_.empty()) {
-				ECLOG_FAULT(InvalidArgument);
-			}
 		}
 
 		KeyDesc(cstring str, StringNotation notation = string_notation_unquoted, cstring delimiter = cstring()) :
 			str_(str), notation_(notation), delimiter_(delimiter)
 		{
-			if (str_.empty() || !detail::StringDelimiter::validate(delimiter_)) {
+			if (!detail::StringDelimiter::validate(delimiter_)) {
 				ECLOG_FAULT(InvalidArgument);
 			}
 		}

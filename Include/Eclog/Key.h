@@ -23,7 +23,7 @@ namespace eclog {
 		{
 			ECLOG_ASSERT(str);
 			ECLOG_ASSERT(notation);
-			ECLOG_ASSERT(delimiterSize <= 16 && str.size() > delimiterSize);
+			ECLOG_ASSERT(delimiterSize <= 16 && (str.size() == 0 || str.size() > delimiterSize));
 		}
 
 		StringNotation notation() const
