@@ -7,11 +7,11 @@ string: "Hello" + @" World" + "!"
           "spoon. Then you'll see that it is not the spoon that " +
           "bends, it is only yourself."
 
-"string" + @"3": "abc" + |HEREDOC
+"string" + @"3": @ddd"abc"ddd + |END
     def
-    HEREDOC
+    END
 +
-    |HEREDOC
+    |EOF
     ghi
-    HEREDOC
-+ @""
+    EOF
++ @qqq""qqq

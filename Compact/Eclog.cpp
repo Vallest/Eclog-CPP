@@ -2766,7 +2766,7 @@ namespace eclog {
 				transferUnquotedString(ctx, ec);
 				ECLOG_ON_ERROR(return);
 
-				stringNotation |= string_notation_unquoted;
+				stringNotation = string_notation_unquoted;
 				delimiterSize = 0;
 			}
 			else if (ch == '"')
@@ -2774,7 +2774,7 @@ namespace eclog {
 				transferQuotedString(ctx, ec);
 				ECLOG_ON_ERROR(return);
 
-				stringNotation |= string_notation_quoted;
+				stringNotation = string_notation_quoted;
 				delimiterSize = 0;
 			}
 			else if (ch == '@')
@@ -2782,14 +2782,14 @@ namespace eclog {
 				transferRawString(ctx, embedDelimiter, delimiterSize, ec);
 				ECLOG_ON_ERROR(return);
 
-				stringNotation |= string_notation_raw;
+				stringNotation = string_notation_raw;
 			}
 			else if (ch == '|')
 			{
 				transferHeredocString(ctx, embedDelimiter, delimiterSize, ec);
 				ECLOG_ON_ERROR(return);
 
-				stringNotation |= string_notation_heredoc;
+				stringNotation = string_notation_heredoc;
 			}
 			else
 			{
@@ -3134,7 +3134,6 @@ namespace eclog {
 
 				case state_keyword_or_string:
 					keyword = 0;
-					stringNotation = 0;
 
 					transferString(ctx, stringNotation, true, delimiterSize, ec);
 					ECLOG_ON_ERROR(return);
@@ -3183,7 +3182,10 @@ namespace eclog {
 				case state_keyword_or_string3:
 					if (ch == '"' || ch == '@' || ch == '|')
 					{
-						transferString(ctx, stringNotation, false, delimiterSize, ec);
+						int n;
+						size_t d;
+
+						transferString(ctx, n, false, d, ec);
 						ECLOG_ON_ERROR(return);
 
 						lineOfLastValue = ctx.line();
@@ -3346,7 +3348,6 @@ namespace eclog {
 
 				case state_keyword_or_string:
 					keyword = 0;
-					stringNotation = 0;
 
 					transferString(ctx, stringNotation, true, delimiterSize, ec);
 					ECLOG_ON_ERROR(return);
@@ -3395,7 +3396,10 @@ namespace eclog {
 				case state_keyword_or_string3:
 					if (ch == '"' || ch == '@' || ch == '|')
 					{
-						transferString(ctx, stringNotation, false, delimiterSize, ec);
+						int n;
+						size_t d;
+
+						transferString(ctx, n, false, d, ec);
 						ECLOG_ON_ERROR(return);
 
 						lineOfLastValue = ctx.line();

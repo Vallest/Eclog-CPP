@@ -1921,10 +1921,10 @@ namespace eclog {
 namespace eclog {
 
 	enum StringNotation {
-		string_notation_unquoted = 1 << 0,
-		string_notation_quoted = 1 << 1,
-		string_notation_raw = 1 << 2,
-		string_notation_heredoc = 1 << 3,
+		string_notation_unquoted = 1,
+		string_notation_quoted,
+		string_notation_raw,
+		string_notation_heredoc,
 	};
 
 } // eclog
