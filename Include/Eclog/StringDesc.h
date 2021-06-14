@@ -15,7 +15,7 @@ namespace eclog {
 		{
 		}
 
-		StringDesc(cstring value, StringNotation notation = string_notation_quoted, cstring delimiter = cstring())
+		StringDesc(cstring value, StringNotation notation = string_notation_unquoted, cstring delimiter = cstring())
 			: ValueDesc(value, notation, delimiter)
 		{
 		}

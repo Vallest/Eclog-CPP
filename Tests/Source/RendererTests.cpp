@@ -161,9 +161,9 @@ TEST_CASE("Renderer")
 		{
 			eclog::ObjectRenderer root(renderer);
 
-			root.renderMember("empty", "");
-			root.renderMember("(string)", "Hello World!");
-			root.renderMember("utf8", "\xe4\xbd\xa0\xe5\xa5\xbd\xef\xbc\x8c\xe4\xb8\x96\xe7\x95\x8c\xef\xbc\x81");
+			root.renderMember("empty", eclog::StringDesc("", eclog::string_notation_quoted));
+			root.renderMember("(string)", eclog::StringDesc("Hello World!", eclog::string_notation_quoted));
+			root.renderMember("utf8", eclog::StringDesc("\xe4\xbd\xa0\xe5\xa5\xbd\xef\xbc\x8c\xe4\xb8\x96\xe7\x95\x8c\xef\xbc\x81", eclog::string_notation_quoted));
 		}
 		renderer.endRootObject();
 
@@ -190,7 +190,7 @@ TEST_CASE("Renderer")
 		{
 			eclog::ObjectRenderer root(renderer);
 
-			root.renderMember("escape", eclog::cstring("\\/\"\0\b\f\n\r\t", 9));
+			root.renderMember("escape", eclog::StringDesc(eclog::cstring("\\/\"\0\b\f\n\r\t", 9), eclog::string_notation_quoted));
 		}
 		renderer.endRootObject();
 

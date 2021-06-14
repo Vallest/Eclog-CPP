@@ -36,10 +36,10 @@ namespace eclog {
 			str_.end = string.end();
 			str_.dbegin = 0;
 			str_.dend = 0;
-			str_.notation = string_notation_quoted;
+			str_.notation = string_notation_unquoted;
 		}
 
-		ValueDesc(cstring value, StringNotation notation = string_notation_quoted, cstring delimiter = cstring()) : type_(value_type_string)
+		ValueDesc(cstring value, StringNotation notation = string_notation_unquoted, cstring delimiter = cstring()) : type_(value_type_string)
 		{
 			if (!detail::StringDelimiter::validate(delimiter)) {
 				ECLOG_FAULT(InvalidArgument);
