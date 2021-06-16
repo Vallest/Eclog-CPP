@@ -1,6 +1,6 @@
 # Eclog-CPP
 
-Eclog-CPP is a cross-platform C++ library for parsing and rendering [Eclog](https://eclog.org) (a superset of JSON) texts.
+Eclog-CPP is a cross-platform C++ library for parsing and rendering [Eclog](https://eclog.org) (a JSON-like format) texts.
 
 
 
