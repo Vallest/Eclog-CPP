@@ -11,6 +11,7 @@
 
 #include <ostream>
 
+namespace vallest {
 namespace eclog {
 
 	class Number {
@@ -496,6 +497,7 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_NUMBER_H_
 

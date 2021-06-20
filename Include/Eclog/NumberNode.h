@@ -9,6 +9,7 @@
 #include <Eclog/NumberDesc.h>
 #include <Eclog/Number.h>
 
+namespace vallest {
 namespace eclog {
 
 	class NumberNode : public ValueNode {
@@ -69,6 +70,7 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_NUMBERNODE_H_
 

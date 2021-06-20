@@ -11,171 +11,171 @@
 #include <Eclog/Detail/Limits.h>
 
 #if defined(_MSC_VER)
-	#pragma warning(push)
-	#pragma warning(disable: 4146)
+#pragma warning(push)
+#pragma warning(disable: 4146)
 #endif
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename IntType>
+	inline IntType stringToSignedInteger(const char* str, const char** outStr = 0, int* outError = 0)
+	{
+		bool negative = false;
 
-		template<typename IntType>
-		inline IntType stringToSignedInteger(const char* str, const char** outStr = 0, int* outError = 0)
+		if (*str == '+') {
+			++str;
+		}
+		else if (*str == '-') {
+			++str;
+			negative = true;
+		}
+
+		typename detail::RemoveCV<IntType>::Type result = 0;
+
+		const typename detail::RemoveCV<IntType>::Type n = negative ? detail::minValue<IntType>() / 10 : detail::maxValue<IntType>() / 10;
+		const int m = (int)(negative ? -(detail::minValue<IntType>() % 10) : detail::maxValue<IntType>() % 10);
+
+		int error = 0;
+
+		for (;;)
 		{
-			bool negative = false;
+			char ch = *str;
 
-			if (*str == '+') {
-				++str;
-			}
-			else if (*str == '-') {
-				++str;
-				negative = true;
-			}
-
-			typename detail::RemoveCV<IntType>::Type result = 0;
-
-			const typename detail::RemoveCV<IntType>::Type n = negative ? detail::minValue<IntType>() / 10 : detail::maxValue<IntType>() / 10;
-			const int m = (int)(negative ? -(detail::minValue<IntType>() % 10) : detail::maxValue<IntType>() % 10);
-
-			int error = 0;
-
-			for (;;)
+			if (detail::isDigit(ch))
 			{
-				char ch = *str;
+				char d = ch - '0';
 
-				if (detail::isDigit(ch))
+				if (negative)
 				{
-					char d = ch - '0';
-
-					if (negative)
-					{
-						if (result < n || (result == n && d > m)) {
-							error = -1;
-						}
-
-						result = result * 10 - d;
-					}
-					else
-					{
-						if (result > n || (result == n && d > m)) {
-							error = 1;
-						}
-
-						result = result * 10 + d;
+					if (result < n || (result == n && d > m)) {
+						error = -1;
 					}
 
-					++str;
+					result = result * 10 - d;
 				}
 				else
 				{
-					break;
-				}
-			}
-
-			if (outStr) {
-				*outStr = str;
-			}
-
-			if (outError) {
-				*outError = error;
-			}
-
-			return result;
-		}
-
-		template<typename UIntType>
-		inline UIntType stringToUnsignedInteger(const char* str, const char** outStr = 0, int* outError = 0)
-		{
-			bool negative = false;
-
-			if (*str == '+') {
-				++str;
-			}
-			else if (*str == '-') {
-				++str;
-				negative = true;
-			}
-
-			typename detail::RemoveCV<UIntType>::Type result = 0;
-
-			const typename detail::RemoveCV<UIntType>::Type n = detail::maxValue<UIntType>() / 10;
-			const int m = (int)(detail::maxValue<UIntType>() % 10);
-
-			int error = 0;
-
-			for (;;)
-			{
-				char ch = *str;
-
-				if (detail::isDigit(ch))
-				{
-					char d = ch - '0';
-
 					if (result > n || (result == n && d > m)) {
 						error = 1;
 					}
 
 					result = result * 10 + d;
-					++str;
 				}
-				else
-				{
-					break;
-				}
-			}
 
-			if (outStr) {
-				*outStr = str;
+				++str;
 			}
-
-			if (outError) {
-				*outError = error;
+			else
+			{
+				break;
 			}
-
-			return negative ? -result : result;
 		}
 
-		template<typename IntType>
-		inline void integerToString(IntType value, char* buffer)
+		if (outStr) {
+			*outStr = str;
+		}
+
+		if (outError) {
+			*outError = error;
+		}
+
+		return result;
+	}
+
+	template<typename UIntType>
+	inline UIntType stringToUnsignedInteger(const char* str, const char** outStr = 0, int* outError = 0)
+	{
+		bool negative = false;
+
+		if (*str == '+') {
+			++str;
+		}
+		else if (*str == '-') {
+			++str;
+			negative = true;
+		}
+
+		typename detail::RemoveCV<UIntType>::Type result = 0;
+
+		const typename detail::RemoveCV<UIntType>::Type n = detail::maxValue<UIntType>() / 10;
+		const int m = (int)(detail::maxValue<UIntType>() % 10);
+
+		int error = 0;
+
+		for (;;)
 		{
-			char* p = buffer;
+			char ch = *str;
 
-			if (value == 0)
+			if (detail::isDigit(ch))
 			{
-				p[0] = '0';
-				p[1] = 0;
-				return;
+				char d = ch - '0';
+
+				if (result > n || (result == n && d > m)) {
+					error = 1;
+				}
+
+				result = result * 10 + d;
+				++str;
 			}
-
-			bool negative = false;
-
-			if (value < 0)
+			else
 			{
-				value = -value;
-				negative = true;
+				break;
 			}
-
-			while (value)
-			{
-				*p++ = '0' + (char)(value % 10);
-				value /= 10;
-			}
-
-			if (negative) {
-				*p++ = '-';
-			}
-
-			detail::reverse(buffer, p);
-
-			*p = 0;
 		}
 
-	} // detail
+		if (outStr) {
+			*outStr = str;
+		}
 
+		if (outError) {
+			*outError = error;
+		}
+
+		return negative ? -result : result;
+	}
+
+	template<typename IntType>
+	inline void integerToString(IntType value, char* buffer)
+	{
+		char* p = buffer;
+
+		if (value == 0)
+		{
+			p[0] = '0';
+			p[1] = 0;
+			return;
+		}
+
+		bool negative = false;
+
+		if (value < 0)
+		{
+			value = -value;
+			negative = true;
+		}
+
+		while (value)
+		{
+			*p++ = '0' + (char)(value % 10);
+			value /= 10;
+		}
+
+		if (negative) {
+			*p++ = '-';
+		}
+
+		detail::reverse(buffer, p);
+
+		*p = 0;
+	}
+
+} // detail
 } // eclog
+} // vallest
 
 #if defined(_MSC_VER)
-	#pragma warning(pop)
+#pragma warning(pop)
 #endif
 
 #endif // ECLOG_CPP_DETAIL_INTEGERCONVERSION_H_

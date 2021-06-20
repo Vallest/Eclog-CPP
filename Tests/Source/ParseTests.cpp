@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+using namespace vallest;
+
 namespace {
 
 	const char* testcases[] =

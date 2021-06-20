@@ -12,6 +12,7 @@
 #include <Eclog/Detail/RendererState.h>
 #include <Eclog/Detail/NonAssignable.h>
 
+namespace vallest {
 namespace eclog {
 
 	class ObjectRenderer : private detail::NonAssignable {
@@ -223,6 +224,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_OBJECTRENDERER_H_
 

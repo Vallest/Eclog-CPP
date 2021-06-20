@@ -11,69 +11,69 @@
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class UTF8Decoder : private NonCopyable {
+	public:
+		explicit UTF8Decoder(InputStream& is) :
+			is_(is), p_(buffer_), avail_(0), hasChar_(false), position_(0)
+		{
+		}
 
-		class UTF8Decoder : private NonCopyable {
-		public:
-			explicit UTF8Decoder(InputStream& is) :
-				is_(is), p_(buffer_), avail_(0), hasChar_(false), position_(0)
-			{
-			}
-
-			int peekChar(ErrorCode* ec)
-			{
-				if (hasChar_) {
-					return char_;
-				}
-
-				char_ = decode(ec);
-				hasChar_ = (char_ >= 0);
-
+		int peekChar(ErrorCode* ec)
+		{
+			if (hasChar_) {
 				return char_;
 			}
 
-			int getChar(ErrorCode* ec)
+			char_ = decode(ec);
+			hasChar_ = (char_ >= 0);
+
+			return char_;
+		}
+
+		int getChar(ErrorCode* ec)
+		{
+			if (hasChar_)
 			{
-				if (hasChar_)
-				{
-					hasChar_ = false;
-					++position_;
-					return char_;
-				}
-
-				int ch = decode(ec);
-
-				position_ += (ch >= 0);
-
-				return ch;
+				hasChar_ = false;
+				++position_;
+				return char_;
 			}
 
-			long long position() const
-			{
-				return position_;
-			}
+			int ch = decode(ec);
 
-		private:
-			int decode(ErrorCode* ec);
+			position_ += (ch >= 0);
 
-		private:
-			InputStream& is_;
+			return ch;
+		}
 
-			unsigned char buffer_[128];
-			unsigned char* p_;
-			size_t avail_;
+		long long position() const
+		{
+			return position_;
+		}
 
-			bool hasChar_;
-			int char_;
+	private:
+		int decode(ErrorCode* ec);
 
-			long long position_;
-		};
+	private:
+		InputStream& is_;
 
-	} // detail
+		unsigned char buffer_[128];
+		unsigned char* p_;
+		size_t avail_;
 
+		bool hasChar_;
+		int char_;
+
+		long long position_;
+	};
+
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_UTF8DECODER_H_
 

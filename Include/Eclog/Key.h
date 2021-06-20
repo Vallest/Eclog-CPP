@@ -8,6 +8,7 @@
 #include <Eclog/StringNotation.h>
 #include <Eclog/cstring.h>
 
+namespace vallest {
 namespace eclog {
 
 	class Key : public cstring {
@@ -43,6 +44,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_KEY_H_
 

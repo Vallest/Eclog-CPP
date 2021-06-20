@@ -17,6 +17,7 @@
 #include <string.h> // strlen, memcmp
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
 
 	class cstring {
@@ -282,6 +283,7 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_CSTRING_H_
 

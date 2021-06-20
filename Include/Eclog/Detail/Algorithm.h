@@ -7,54 +7,54 @@
 
 #include <Eclog/Detail/Utility.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T>
+	inline T min(T a, T b)
+	{
+		return a < b ? a : b;
+	}
 
-		template<typename T>
-		inline T min(T a, T b)
+	template<typename T>
+	inline T max(T a, T b)
+	{
+		return a > b ? a : b;
+	}
+
+	template <typename Iterator, typename OutputIterator>
+	inline void copy(Iterator first, Iterator last, OutputIterator first2)
+	{
+		while (first != last)
 		{
-			return a < b ? a : b;
+			*first2 = *first;
+			++first2;
+			++first;
 		}
+	}
 
-		template<typename T>
-		inline T max(T a, T b)
+	template <typename Iterator>
+	inline void reverse(Iterator first, Iterator last)
+	{
+		while (first != last && first != --last)
 		{
-			return a > b ? a : b;
+			swap(*first, *last);
+			++first;
 		}
+	}
 
-		template <typename Iterator, typename OutputIterator>
-		inline void copy(Iterator first, Iterator last, OutputIterator first2)
-		{
-			while (first != last)
-			{
-				*first2 = *first;
-				++first2;
-				++first;
-			}
-		}
+	template<class Iterator>
+	inline void rotate(Iterator first, Iterator mid, Iterator last)
+	{
+		reverse(first, mid);
+		reverse(mid, last);
+		reverse(first, last);
+	}
 
-		template <typename Iterator>
-		inline void reverse(Iterator first, Iterator last)
-		{
-			while (first != last && first != --last)
-			{
-				swap(*first, *last);
-				++first;
-			}
-		}
-
-		template<class Iterator>
-		inline void rotate(Iterator first, Iterator mid, Iterator last)
-		{
-			reverse(first, mid);
-			reverse(mid, last);
-			reverse(first, last);
-		}
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_ALGORITHM_H_
 

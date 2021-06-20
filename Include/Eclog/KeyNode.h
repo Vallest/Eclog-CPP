@@ -11,6 +11,7 @@
 #include <Eclog/StringNotation.h>
 #include <Eclog/Error.h>
 
+namespace vallest {
 namespace eclog {
 
 	class KeyNode : public Node {
@@ -29,6 +30,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_KEYNODE_H_
 

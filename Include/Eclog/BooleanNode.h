@@ -7,6 +7,7 @@
 
 #include <Eclog/ValueNode.h>
 
+namespace vallest {
 namespace eclog {
 
 	class BooleanNode : public ValueNode {
@@ -21,6 +22,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_BOOLEANNODE_H_
 

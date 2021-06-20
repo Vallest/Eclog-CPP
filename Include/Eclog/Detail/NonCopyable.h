@@ -5,23 +5,23 @@
 #ifndef ECLOG_CPP_DETAIL_NONCOPYABLE_H_
 #define ECLOG_CPP_DETAIL_NONCOPYABLE_H_
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class NonCopyable {
+	protected:
+		NonCopyable() {}
+		~NonCopyable() {}
 
-		class NonCopyable {
-		protected:
-			NonCopyable() {}
-			~NonCopyable() {}
+	private:
+		NonCopyable(const NonCopyable&);
+		NonCopyable& operator=(const NonCopyable&);
+	};
 
-		private:
-			NonCopyable(const NonCopyable&);
-			NonCopyable& operator=(const NonCopyable&);
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_NONCOPYABLE_H_
 

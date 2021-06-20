@@ -12,6 +12,7 @@
 #include <Eclog/Detail/RendererState.h>
 #include <Eclog/Detail/NonAssignable.h>
 
+namespace vallest {
 namespace eclog {
 
 	class ArrayRenderer : private detail::NonAssignable {
@@ -223,6 +224,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_ARRAYRENDERER_H_
 

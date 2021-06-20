@@ -16,6 +16,8 @@
 #include <sstream>
 #include <limits>
 
+using namespace vallest;
+
 TEST_CASE("Renderer")
 {
 	SUBCASE("Empty")

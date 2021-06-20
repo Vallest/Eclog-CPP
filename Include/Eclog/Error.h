@@ -44,11 +44,11 @@
 	if (ec && *ec) { Code; }
 
 #define ECLOG_ERROR(Name, ...) \
-	if (ec) { *ec = eclog::makeErrorCode<eclog::Name>(__VA_ARGS__); } \
-	else { ECLOG_THROW(eclog::Name##Exception, __VA_ARGS__); }
+	if (ec) { *ec = vallest::eclog::makeErrorCode<vallest::eclog::Name>(__VA_ARGS__); } \
+	else { ECLOG_THROW(vallest::eclog::Name##Exception, __VA_ARGS__); }
 
 #define ECLOG_FAULT(Name, ...) \
-	ECLOG_THROW(eclog::Name##Exception, __VA_ARGS__)
+	ECLOG_THROW(vallest::eclog::Name##Exception, __VA_ARGS__)
 
 #if defined(_MSC_VER) && _MSC_VER <= 1600
 	#define ECLOG_NOTHROW
@@ -56,6 +56,7 @@
 	#define ECLOG_NOTHROW throw()
 #endif
 
+namespace vallest {
 namespace eclog {
 
 	enum Success {
@@ -1055,7 +1056,8 @@ namespace eclog {
 		return stream;
 	}
 
-}
+} // eclog
+} // vallest
 
 #endif // ECLOG_CPP_ERROR_H_
 

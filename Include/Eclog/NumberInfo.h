@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_NUMBERINFO_H_
 #define ECLOG_CPP_NUMBERINFO_H_
 
+namespace vallest {
 namespace eclog {
 
 	enum NumberInfo {
@@ -17,6 +18,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_NUMBERINFO_H_
 

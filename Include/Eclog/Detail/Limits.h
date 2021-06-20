@@ -7,25 +7,25 @@
 
 #include <limits>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T>
+	inline T minValue()
+	{
+		return std::numeric_limits<T>::min();
+	}
 
-		template<typename T>
-		inline T minValue()
-		{
-			return std::numeric_limits<T>::min();
-		}
+	template<typename T>
+	inline T maxValue()
+	{
+		return std::numeric_limits<T>::max();
+	}
 
-		template<typename T>
-		inline T maxValue()
-		{
-			return std::numeric_limits<T>::max();
-		}
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_LIMITS_H_
 

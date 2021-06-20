@@ -15,6 +15,7 @@
 #include <Eclog/Detail/RendererState.h>
 #include <Eclog/Detail/NonCopyable.h>
 
+namespace vallest {
 namespace eclog {
 
 	class Renderer : private detail::NonCopyable {
@@ -199,6 +200,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_RENDERER_H_
 

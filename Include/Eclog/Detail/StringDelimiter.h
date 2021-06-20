@@ -12,66 +12,66 @@
 #include <string.h> // memcpy
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class StringDelimiter {
+	public:
+		void clear()
+		{
+			d_.clear();
+		}
 
-		class StringDelimiter {
-		public:
-			void clear()
-			{
-				d_.clear();
+		size_t size() const
+		{
+			return d_.size();
+		}
+
+		bool assign(cstring str)
+		{
+			if (!validate(str)) {
+				return false;
 			}
 
-			size_t size() const
+			d_.resize(str.size());
+
+			if (str.size())
 			{
-				return d_.size();
+				memcpy(d_.data(), str.data(), str.size());
 			}
 
-			bool assign(cstring str)
+			return true;
+		}
+
+		operator cstring() const
+		{
+			return cstring(d_.data(), d_.data() + d_.size());
+		}
+
+		static bool validate(cstring str)
+		{
+			if (str.size() > 16) {
+				return false;
+			}
+
+			for (const char* s = str.begin(); s != str.end(); ++s)
 			{
-				if (!validate(str)) {
+				if (!isAlphanum(*s) && *s != '_') {
 					return false;
 				}
-
-				d_.resize(str.size());
-
-				if (str.size())
-				{
-					memcpy(d_.data(), str.data(), str.size());
-				}
-
-				return true;
 			}
 
-			operator cstring() const
-			{
-				return cstring(d_.data(), d_.data() + d_.size());
-			}
+			return true;
+		}
 
-			static bool validate(cstring str)
-			{
-				if (str.size() > 16) {
-					return false;
-				}
+	private:
+		InlineArray<char, 16> d_;
+	};
 
-				for (const char* s = str.begin(); s != str.end(); ++s)
-				{
-					if (!isAlphanum(*s) && *s != '_') {
-						return false;
-					}
-				}
-
-				return true;
-			}
-
-		private:
-			InlineArray<char, 16> d_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_STRINGDELIMITER_H_
 

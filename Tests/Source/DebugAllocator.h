@@ -7,9 +7,6 @@
 
 #include "UnitTesting.h"
 
-#include <Eclog/Error.h>
-#include <Eclog/Detail/NonCopyable.h>
-
 #include <stdlib.h> // malloc, free
 
 class DebugAllocator {
@@ -19,7 +16,7 @@ public:
 		void* ptr = malloc(sizeof(size_t) + size);
 
 		if (!ptr) {
-			ECLOG_FAULT(OutOfMemory);
+			FAIL("out of memory");
 		}
 
 		*(size_t*)ptr = size;
@@ -53,7 +50,7 @@ private:
 	static size_t total_;
 };
 
-class MemoryLeakDetector : private eclog::detail::NonCopyable {
+class MemoryLeakDetector {
 public:
 	MemoryLeakDetector()
 	{
@@ -70,6 +67,10 @@ public:
 			FAIL("memory leak detected");
 		}
 	}
+
+private:
+	MemoryLeakDetector(const MemoryLeakDetector&);
+	MemoryLeakDetector& operator=(const MemoryLeakDetector&);
 };
 
 #endif // ECLOG_TEST_DEBUGALLOCATOR_H_

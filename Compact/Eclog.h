@@ -7,23 +7,23 @@
 #ifndef ECLOG_CPP_H_
 #define ECLOG_CPP_H_
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class NonCopyable {
+	protected:
+		NonCopyable() {}
+		~NonCopyable() {}
 
-		class NonCopyable {
-		protected:
-			NonCopyable() {}
-			~NonCopyable() {}
+	private:
+		NonCopyable(const NonCopyable&);
+		NonCopyable& operator=(const NonCopyable&);
+	};
 
-		private:
-			NonCopyable(const NonCopyable&);
-			NonCopyable& operator=(const NonCopyable&);
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #if __cplusplus >= 201703L
 	#define ECLOG_FALLTHROUGH [[fallthrough]];
@@ -81,132 +81,132 @@ namespace eclog {
 
 #include <limits> // std::numeric_limits
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename From, typename To>
+	class IsConvertible {
+	private:
+		typedef char True[1];
+		typedef char False[2];
 
-		template<typename From, typename To>
-		class IsConvertible {
-		private:
-			typedef char True[1];
-			typedef char False[2];
+		static True& test(To);
+		static False& test(...);
 
-			static True& test(To);
-			static False& test(...);
+		static From from();
 
-			static From from();
-
-		public:
-			enum {
-				value = (sizeof(test(from())) == sizeof(True)) ? 1 : 0
-			};
+	public:
+		enum {
+			value = (sizeof(test(from())) == sizeof(True)) ? 1 : 0
 		};
+	};
 
-		template<typename Base, typename Derived>
-		class IsBaseOf {
-		public:
-			enum {
-				value = IsConvertible<const Derived*, const Base*>::value
-			};
+	template<typename Base, typename Derived>
+	class IsBaseOf {
+	public:
+		enum {
+			value = IsConvertible<const Derived*, const Base*>::value
 		};
+	};
 
-		template <bool B, class T = void>
-		class EnableIfCond {
+	template <bool B, class T = void>
+	class EnableIfCond {
+	};
+
+	template <class T>
+	class EnableIfCond<true, T> {
+	public:
+		typedef T Type;
+	};
+
+	template <class Cond, class T = void>
+	class EnableIf : public EnableIfCond<Cond::value, T> {
+	};
+
+	template<typename T>
+	class RemoveCV {
+	public:
+		typedef T Type;
+	};
+
+	template<typename T>
+	class RemoveCV<const T> {
+	public:
+		typedef T Type;
+	};
+
+	template<typename T>
+	class RemoveCV<volatile T> {
+	public:
+		typedef T Type;
+	};
+
+	template<typename T>
+	class RemoveCV<const volatile T> {
+	public:
+		typedef T Type;
+	};
+
+	template<typename IntType>
+	class IsSigned {
+	public:
+		enum {
+			value = std::numeric_limits<IntType>::is_signed ? 1 : 0
 		};
+	};
 
-		template <class T>
-		class EnableIfCond<true, T> {
-		public:
-			typedef T Type;
-		};
-
-		template <class Cond, class T = void>
-		class EnableIf : public EnableIfCond<Cond::value, T> {
-		};
-
-		template<typename T>
-		class RemoveCV {
-		public:
-			typedef T Type;
-		};
-
-		template<typename T>
-		class RemoveCV<const T> {
-		public:
-			typedef T Type;
-		};
-
-		template<typename T>
-		class RemoveCV<volatile T> {
-		public:
-			typedef T Type;
-		};
-
-		template<typename T>
-		class RemoveCV<const volatile T> {
-		public:
-			typedef T Type;
-		};
-
-		template<typename IntType>
-		class IsSigned {
-		public:
-			enum {
-				value = std::numeric_limits<IntType>::is_signed ? 1 : 0
-			};
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class SafeBool {
+	public:
+		typedef void (SafeBool::*BoolType)() const;
 
-		class SafeBool {
-		public:
-			typedef void (SafeBool::*BoolType)() const;
+	public:
+		static BoolType make(bool value)
+		{
+			return value ? &SafeBool::boolTrue : 0;
+		}
 
-		public:
-			static BoolType make(bool value)
-			{
-				return value ? &SafeBool::boolTrue : 0;
-			}
+	private:
+		void boolTrue() const
+		{
+		}
+	};
 
-		private:
-			void boolTrue() const
-			{
-			}
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T>
+	inline void swap(T& a, T& b)
+	{
+		T t = a;
+		a = b;
+		b = t;
+	}
 
-		template<typename T>
-		inline void swap(T& a, T& b)
-		{
-			T t = a;
-			a = b;
-			b = t;
-		}
+	template<typename T, size_t Size>
+	inline size_t arraySize(const T(&)[Size])
+	{
+		return Size;
+	}
 
-		template<typename T, size_t Size>
-		inline size_t arraySize(const T(&)[Size])
-		{
-			return Size;
-		}
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #include <exception>
 #include <ostream>
@@ -241,11 +241,11 @@ namespace eclog {
 	if (ec && *ec) { Code; }
 
 #define ECLOG_ERROR(Name, ...) \
-	if (ec) { *ec = eclog::makeErrorCode<eclog::Name>(__VA_ARGS__); } \
-	else { ECLOG_THROW(eclog::Name##Exception, __VA_ARGS__); }
+	if (ec) { *ec = vallest::eclog::makeErrorCode<vallest::eclog::Name>(__VA_ARGS__); } \
+	else { ECLOG_THROW(vallest::eclog::Name##Exception, __VA_ARGS__); }
 
 #define ECLOG_FAULT(Name, ...) \
-	ECLOG_THROW(eclog::Name##Exception, __VA_ARGS__)
+	ECLOG_THROW(vallest::eclog::Name##Exception, __VA_ARGS__)
 
 #if defined(_MSC_VER) && _MSC_VER <= 1600
 	#define ECLOG_NOTHROW
@@ -253,6 +253,7 @@ namespace eclog {
 	#define ECLOG_NOTHROW throw()
 #endif
 
+namespace vallest {
 namespace eclog {
 
 	enum Success {
@@ -1252,10 +1253,12 @@ namespace eclog {
 		return stream;
 	}
 
-}
+} // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
 
 	class InputStream {
@@ -1267,73 +1270,75 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class UTF8Decoder : private NonCopyable {
+	public:
+		explicit UTF8Decoder(InputStream& is) :
+			is_(is), p_(buffer_), avail_(0), hasChar_(false), position_(0)
+		{
+		}
 
-		class UTF8Decoder : private NonCopyable {
-		public:
-			explicit UTF8Decoder(InputStream& is) :
-				is_(is), p_(buffer_), avail_(0), hasChar_(false), position_(0)
-			{
-			}
-
-			int peekChar(ErrorCode* ec)
-			{
-				if (hasChar_) {
-					return char_;
-				}
-
-				char_ = decode(ec);
-				hasChar_ = (char_ >= 0);
-
+		int peekChar(ErrorCode* ec)
+		{
+			if (hasChar_) {
 				return char_;
 			}
 
-			int getChar(ErrorCode* ec)
+			char_ = decode(ec);
+			hasChar_ = (char_ >= 0);
+
+			return char_;
+		}
+
+		int getChar(ErrorCode* ec)
+		{
+			if (hasChar_)
 			{
-				if (hasChar_)
-				{
-					hasChar_ = false;
-					++position_;
-					return char_;
-				}
-
-				int ch = decode(ec);
-
-				position_ += (ch >= 0);
-
-				return ch;
+				hasChar_ = false;
+				++position_;
+				return char_;
 			}
 
-			long long position() const
-			{
-				return position_;
-			}
+			int ch = decode(ec);
 
-		private:
-			int decode(ErrorCode* ec);
+			position_ += (ch >= 0);
 
-		private:
-			InputStream& is_;
+			return ch;
+		}
 
-			unsigned char buffer_[128];
-			unsigned char* p_;
-			size_t avail_;
+		long long position() const
+		{
+			return position_;
+		}
 
-			bool hasChar_;
-			int char_;
+	private:
+		int decode(ErrorCode* ec);
 
-			long long position_;
-		};
+	private:
+		InputStream& is_;
 
-	} // detail
+		unsigned char buffer_[128];
+		unsigned char* p_;
+		size_t avail_;
 
+		bool hasChar_;
+		int char_;
+
+		long long position_;
+	};
+
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class UTF8Decoder : private detail::UTF8Decoder {
@@ -1369,9 +1374,11 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
 
 	class OutputStream {
@@ -1382,33 +1389,35 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class UTF8Encoder : private NonCopyable {
+	public:
+		explicit UTF8Encoder(OutputStream& os) : os_(os)
+		{
+		}
 
-		class UTF8Encoder : private NonCopyable {
-		public:
-			explicit UTF8Encoder(OutputStream& os) : os_(os)
-			{
-			}
+		void putChar(int ch, ErrorCode* ec)
+		{
+			encode(ch, ec);
+		}
 
-			void putChar(int ch, ErrorCode* ec)
-			{
-				encode(ch, ec);
-			}
+	private:
+		void encode(int ch, ErrorCode* ec);
 
-		private:
-			void encode(int ch, ErrorCode* ec);
+	private:
+		OutputStream& os_;
+	};
 
-		private:
-			OutputStream& os_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class UTF8Encoder : private detail::UTF8Encoder {
@@ -1429,58 +1438,60 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T>
+	inline T min(T a, T b)
+	{
+		return a < b ? a : b;
+	}
 
-		template<typename T>
-		inline T min(T a, T b)
+	template<typename T>
+	inline T max(T a, T b)
+	{
+		return a > b ? a : b;
+	}
+
+	template <typename Iterator, typename OutputIterator>
+	inline void copy(Iterator first, Iterator last, OutputIterator first2)
+	{
+		while (first != last)
 		{
-			return a < b ? a : b;
+			*first2 = *first;
+			++first2;
+			++first;
 		}
+	}
 
-		template<typename T>
-		inline T max(T a, T b)
+	template <typename Iterator>
+	inline void reverse(Iterator first, Iterator last)
+	{
+		while (first != last && first != --last)
 		{
-			return a > b ? a : b;
+			swap(*first, *last);
+			++first;
 		}
+	}
 
-		template <typename Iterator, typename OutputIterator>
-		inline void copy(Iterator first, Iterator last, OutputIterator first2)
-		{
-			while (first != last)
-			{
-				*first2 = *first;
-				++first2;
-				++first;
-			}
-		}
+	template<class Iterator>
+	inline void rotate(Iterator first, Iterator mid, Iterator last)
+	{
+		reverse(first, mid);
+		reverse(mid, last);
+		reverse(first, last);
+	}
 
-		template <typename Iterator>
-		inline void reverse(Iterator first, Iterator last)
-		{
-			while (first != last && first != --last)
-			{
-				swap(*first, *last);
-				++first;
-			}
-		}
-
-		template<class Iterator>
-		inline void rotate(Iterator first, Iterator mid, Iterator last)
-		{
-			reverse(first, mid);
-			reverse(mid, last);
-			reverse(first, last);
-		}
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #include <string.h> // memcpy
 
+namespace vallest {
 namespace eclog {
 
 	class MemoryInputStream : public InputStream, private detail::NonCopyable {
@@ -1518,6 +1529,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <assert.h>
 
@@ -1532,6 +1544,7 @@ namespace eclog {
 #include <string.h> // strlen, memcmp
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
 
 	class cstring {
@@ -1797,9 +1810,11 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
 
 	class ParsingBuffer {
@@ -1820,87 +1835,89 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class Context : private NonCopyable {
+	public:
+		explicit Context(InputStream& stream, ParsingBuffer& buffer) :
+			decoder_(stream), buffer_(buffer),
+			line_(1), lineBeginPos_(0), nestingLevel_(0),
+			terminated_(false)
+		{
+		}
 
-		class Context : private NonCopyable {
-		public:
-			explicit Context(InputStream& stream, ParsingBuffer& buffer) :
-				decoder_(stream), buffer_(buffer),
-				line_(1), lineBeginPos_(0), nestingLevel_(0),
-                terminated_(false)
-			{
-			}
+		UTF8Decoder& decoder()
+		{
+			return decoder_;
+		}
 
-			UTF8Decoder& decoder()
-			{
-				return decoder_;
-			}
+		ParsingBuffer& buffer()
+		{
+			return buffer_;
+		}
 
-			ParsingBuffer& buffer()
-			{
-				return buffer_;
-			}
+		void addLine()
+		{
+			lineBeginPos_ = decoder_.position();
+			++line_;
+		}
 
-			void addLine()
-			{
-				lineBeginPos_ = decoder_.position();
-				++line_;
-			}
+		int line() const
+		{
+			return line_;
+		}
 
-			int line() const
-			{
-				return line_;
-			}
+		int column() const
+		{
+			return (int)(decoder_.position() - lineBeginPos_) + 1;
+		}
 
-			int column() const
-			{
-				return (int)(decoder_.position() - lineBeginPos_) + 1;
-			}
+		void beginNested()
+		{
+			++nestingLevel_;
+		}
 
-			void beginNested()
-			{
-				++nestingLevel_;
-			}
+		void endNested()
+		{
+			--nestingLevel_;
+		}
 
-			void endNested()
-			{
-				--nestingLevel_;
-			}
+		int nestingLevel() const
+		{
+			return nestingLevel_;
+		}
 
-			int nestingLevel() const
-			{
-				return nestingLevel_;
-			}
+		void terminate()
+		{
+			terminated_ = true;
+		}
 
-            void terminate()
-            {
-                terminated_ = true;
-            }
+		bool terminated() const
+		{
+			return terminated_;
+		}
 
-            bool terminated() const
-            {
-                return terminated_;
-            }
+	private:
+		UTF8Decoder decoder_;
+		ParsingBuffer& buffer_;
 
-		private:
-			UTF8Decoder decoder_;
-			ParsingBuffer& buffer_;
+		int line_;
+		long long lineBeginPos_;
 
-			int line_;
-			long long lineBeginPos_;
+		int nestingLevel_;
 
-			int nestingLevel_;
+		bool terminated_;
+	};
 
-            bool terminated_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class Context : private detail::Context {
@@ -1917,7 +1934,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	enum StringNotation {
@@ -1928,7 +1947,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class Key : public cstring {
@@ -1964,7 +1985,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class Null {
@@ -1983,7 +2006,9 @@ namespace eclog {
 	extern Null null;
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	enum ValueType {
@@ -1996,7 +2021,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	enum NumberInfo {
@@ -2009,6 +2036,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #define ECLOG_HIGH32(n) (uint32_t)((n) >> 32)
 #define ECLOG_LOW32(n) (uint32_t)((n) & 0xffffffff)
@@ -2026,6 +2054,7 @@ namespace eclog {
 	#define ECLOG_HAS_INT128
 #endif
 
+namespace vallest {
 namespace eclog {
 
 #if defined(_MSC_VER) && !defined(_STDINT)
@@ -2043,162 +2072,164 @@ namespace eclog {
 #endif
 
 } // eclog
+} // vallest
 
 #include <string.h> // memcpy
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class Binary64 {
+	public:
+		static const uint64_t sign_mask = ECLOG_MAKE64(0x80000000, 0x00000000);
+		static const uint64_t exponent_mask = ECLOG_MAKE64(0x7ff00000, 0x00000000);
+		static const uint64_t significand_mask = ECLOG_MAKE64(0x000fffff, 0xffffffff);
+		static const uint64_t hidden_bit = ECLOG_MAKE64(0x00100000, 0x00000000);
+		static const int physical_significand_size = 52;
+		static const int significand_size = 53;
 
-		class Binary64 {
-		public:
-			static const uint64_t sign_mask = ECLOG_MAKE64(0x80000000, 0x00000000);
-			static const uint64_t exponent_mask = ECLOG_MAKE64(0x7ff00000, 0x00000000);
-			static const uint64_t significand_mask = ECLOG_MAKE64(0x000fffff, 0xffffffff);
-			static const uint64_t hidden_bit = ECLOG_MAKE64(0x00100000, 0x00000000);
-			static const int physical_significand_size = 52;
-			static const int significand_size = 53;
+	private:
+		static const int exponent_bias = 0x3ff + physical_significand_size;
+		static const int subnormal_exponent = -exponent_bias + 1;
+		static const int max_exponent = 0x7ff - exponent_bias;
+		static const uint64_t infinity_value = ECLOG_MAKE64(0x7ff00000, 0x00000000);
+		static const uint64_t nan_value = ECLOG_MAKE64(0x7ff00000, 0x00000001);
 
-		private:
-			static const int exponent_bias = 0x3ff + physical_significand_size;
-			static const int subnormal_exponent = -exponent_bias + 1;
-			static const int max_exponent = 0x7ff - exponent_bias;
-			static const uint64_t infinity_value = ECLOG_MAKE64(0x7ff00000, 0x00000000);
-			static const uint64_t nan_value = ECLOG_MAKE64(0x7ff00000, 0x00000001);
+	public:
+		Binary64(double d)
+		{
+			assign(d);
+		}
 
-		public:
-			Binary64(double d)
-			{
-				assign(d);
+		Binary64(uint64_t d64) : d64_(d64)
+		{
+		}
+
+		void assign(double d)
+		{
+			memcpy(&d64_, &d, sizeof(uint64_t));
+		}
+
+		double value() const
+		{
+			double val;
+			memcpy(&val, &d64_, sizeof(uint64_t));
+
+			return val;
+		}
+
+		double previousValue() const
+		{
+			if (d64_ == (infinity_value | sign_mask)) {
+				return value();
 			}
 
-			Binary64(uint64_t d64) : d64_(d64)
-			{
+			if (sign() < 0) {
+				return Binary64(d64_ + 1).value();
+			}
+			else if (significand() == 0) {
+				return -0.0;
+			}
+			else {
+				return Binary64(d64_ - 1).value();
+			}
+		}
+
+		double nextValue() const
+		{
+			if (d64_ == infinity_value) {
+				return value();
 			}
 
-			void assign(double d)
-			{
-				memcpy(&d64_, &d, sizeof(uint64_t));
+			if (sign() < 0 && significand() == 0) {
+				return 0.0;
 			}
 
-			double value() const
-			{
-				double val;
-				memcpy(&val, &d64_, sizeof(uint64_t));
-
-				return val;
+			if (sign() < 0) {
+				return Binary64(d64_ - 1).value();
 			}
-
-			double previousValue() const
-			{
-				if (d64_ == (infinity_value | sign_mask)) {
-					return value();
-				}
-
-				if (sign() < 0) {
-					return Binary64(d64_ + 1).value();
-				}
-				else if (significand() == 0) {
-					return -0.0;
-				}
-				else {
-					return Binary64(d64_ - 1).value();
-				}
+			else {
+				return Binary64(d64_ + 1).value();
 			}
+		}
 
-			double nextValue() const
-			{
-				if (d64_ == infinity_value) {
-					return value();
-				}
+		int sign() const
+		{
+			return ((d64_ & sign_mask) == 0 ? 1 : -1);
+		}
 
-				if (sign() < 0 && significand() == 0) {
-					return 0.0;
-				}
+		bool isSubnormal() const
+		{
+			return ((d64_ & exponent_mask) == 0);
+		}
 
-				if (sign() < 0) {
-					return Binary64(d64_ - 1).value();
-				}
-				else {
-					return Binary64(d64_ + 1).value();
-				}
+		bool isInfinity() const
+		{
+			return ((d64_ & exponent_mask) == exponent_mask) && ((d64_ & significand_mask) == 0);
+		}
+
+		bool isNan() const
+		{
+			return ((d64_ & exponent_mask) == exponent_mask) && ((d64_ & significand_mask) != 0);
+		}
+
+		bool lowerBoundaryIsCloser() const
+		{
+			return ((d64_ & significand_mask) == 0 && exponent() != subnormal_exponent);
+		}
+
+		int exponent() const
+		{
+			if (isSubnormal()) {
+				return subnormal_exponent;
 			}
-
-			int sign() const
-			{
-				return ((d64_ & sign_mask) == 0 ? 1 : -1);
+			else {
+				return (int)((d64_ & exponent_mask) >> physical_significand_size) - exponent_bias;
 			}
+		}
 
-			bool isSubnormal() const
-			{
-				return ((d64_ & exponent_mask) == 0);
+		uint64_t significand() const
+		{
+			if (isSubnormal()) {
+				return (d64_ & significand_mask);
 			}
-
-			bool isInfinity() const
-			{
-				return ((d64_ & exponent_mask) == exponent_mask) && ((d64_ & significand_mask) == 0);
+			else {
+				return ((d64_ & significand_mask) | hidden_bit);
 			}
+		}
 
-			bool isNan() const
-			{
-				return ((d64_ & exponent_mask) == exponent_mask) && ((d64_ & significand_mask) != 0);
-			}
+		static double infinity()
+		{
+			return Binary64(infinity_value).value();
+		}
 
-			bool lowerBoundaryIsCloser() const
-			{
-				return ((d64_ & significand_mask) == 0 && exponent() != subnormal_exponent);
-			}
+		static double negInfinity()
+		{
+			return Binary64(sign_mask | infinity_value).value();
+		}
 
-			int exponent() const
-			{
-				if (isSubnormal()) {
-					return subnormal_exponent;
-				}
-				else {
-					return (int)((d64_ & exponent_mask) >> physical_significand_size) - exponent_bias;
-				}
-			}
+		static double nan()
+		{
+			return Binary64(nan_value).value();
+		}
 
-			uint64_t significand() const
-			{
-				if (isSubnormal()) {
-					return (d64_ & significand_mask);
-				}
-				else {
-					return ((d64_ & significand_mask) | hidden_bit);
-				}
-			}
+		static double negNan()
+		{
+			return Binary64(sign_mask | nan_value).value();
+		}
 
-			static double infinity()
-			{
-				return Binary64(infinity_value).value();
-			}
+	private:
+		uint64_t d64_;
+	};
 
-			static double negInfinity()
-			{
-				return Binary64(sign_mask | infinity_value).value();
-			}
-
-			static double nan()
-			{
-				return Binary64(nan_value).value();
-			}
-
-			static double negNan()
-			{
-				return Binary64(sign_mask | nan_value).value();
-			}
-
-		private:
-			uint64_t d64_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #include <ostream>
 
+namespace vallest {
 namespace eclog {
 
 	class Number {
@@ -2684,251 +2715,253 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	inline bool isBetween(int ch, int lower, int upper)
+	{
+		return (ch >= lower && ch <= upper);
+	}
 
-		inline bool isBetween(int ch, int lower, int upper)
-		{
-			return (ch >= lower && ch <= upper);
-		}
+	inline bool isLower(int ch)
+	{
+		return isBetween(ch, 'a', 'z');
+	}
 
-		inline bool isLower(int ch)
-		{
-			return isBetween(ch, 'a', 'z');
-		}
+	inline bool isUpper(int ch)
+	{
+		return isBetween(ch, 'A', 'Z');
+	}
 
-		inline bool isUpper(int ch)
-		{
-			return isBetween(ch, 'A', 'Z');
-		}
+	inline bool isDigit(int ch)
+	{
+		return isBetween(ch, '0', '9');
+	}
 
-		inline bool isDigit(int ch)
-		{
-			return isBetween(ch, '0', '9');
-		}
+	inline bool isAlpha(int ch)
+	{
+		return (isLower(ch) || isUpper(ch));
+	}
 
-		inline bool isAlpha(int ch)
-		{
-			return (isLower(ch) || isUpper(ch));
-		}
+	inline bool isAlphanum(int ch)
+	{
+		return (isAlpha(ch) || isDigit(ch));
+	}
 
-		inline bool isAlphanum(int ch)
-		{
-			return (isAlpha(ch) || isDigit(ch));
-		}
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #include <limits>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T>
+	inline T minValue()
+	{
+		return std::numeric_limits<T>::min();
+	}
 
-		template<typename T>
-		inline T minValue()
-		{
-			return std::numeric_limits<T>::min();
-		}
+	template<typename T>
+	inline T maxValue()
+	{
+		return std::numeric_limits<T>::max();
+	}
 
-		template<typename T>
-		inline T maxValue()
-		{
-			return std::numeric_limits<T>::max();
-		}
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #if defined(_MSC_VER)
-	#pragma warning(push)
-	#pragma warning(disable: 4146)
+#pragma warning(push)
+#pragma warning(disable: 4146)
 #endif
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename IntType>
+	inline IntType stringToSignedInteger(const char* str, const char** outStr = 0, int* outError = 0)
+	{
+		bool negative = false;
 
-		template<typename IntType>
-		inline IntType stringToSignedInteger(const char* str, const char** outStr = 0, int* outError = 0)
+		if (*str == '+') {
+			++str;
+		}
+		else if (*str == '-') {
+			++str;
+			negative = true;
+		}
+
+		typename detail::RemoveCV<IntType>::Type result = 0;
+
+		const typename detail::RemoveCV<IntType>::Type n = negative ? detail::minValue<IntType>() / 10 : detail::maxValue<IntType>() / 10;
+		const int m = (int)(negative ? -(detail::minValue<IntType>() % 10) : detail::maxValue<IntType>() % 10);
+
+		int error = 0;
+
+		for (;;)
 		{
-			bool negative = false;
+			char ch = *str;
 
-			if (*str == '+') {
-				++str;
-			}
-			else if (*str == '-') {
-				++str;
-				negative = true;
-			}
-
-			typename detail::RemoveCV<IntType>::Type result = 0;
-
-			const typename detail::RemoveCV<IntType>::Type n = negative ? detail::minValue<IntType>() / 10 : detail::maxValue<IntType>() / 10;
-			const int m = (int)(negative ? -(detail::minValue<IntType>() % 10) : detail::maxValue<IntType>() % 10);
-
-			int error = 0;
-
-			for (;;)
+			if (detail::isDigit(ch))
 			{
-				char ch = *str;
+				char d = ch - '0';
 
-				if (detail::isDigit(ch))
+				if (negative)
 				{
-					char d = ch - '0';
-
-					if (negative)
-					{
-						if (result < n || (result == n && d > m)) {
-							error = -1;
-						}
-
-						result = result * 10 - d;
-					}
-					else
-					{
-						if (result > n || (result == n && d > m)) {
-							error = 1;
-						}
-
-						result = result * 10 + d;
+					if (result < n || (result == n && d > m)) {
+						error = -1;
 					}
 
-					++str;
+					result = result * 10 - d;
 				}
 				else
 				{
-					break;
-				}
-			}
-
-			if (outStr) {
-				*outStr = str;
-			}
-
-			if (outError) {
-				*outError = error;
-			}
-
-			return result;
-		}
-
-		template<typename UIntType>
-		inline UIntType stringToUnsignedInteger(const char* str, const char** outStr = 0, int* outError = 0)
-		{
-			bool negative = false;
-
-			if (*str == '+') {
-				++str;
-			}
-			else if (*str == '-') {
-				++str;
-				negative = true;
-			}
-
-			typename detail::RemoveCV<UIntType>::Type result = 0;
-
-			const typename detail::RemoveCV<UIntType>::Type n = detail::maxValue<UIntType>() / 10;
-			const int m = (int)(detail::maxValue<UIntType>() % 10);
-
-			int error = 0;
-
-			for (;;)
-			{
-				char ch = *str;
-
-				if (detail::isDigit(ch))
-				{
-					char d = ch - '0';
-
 					if (result > n || (result == n && d > m)) {
 						error = 1;
 					}
 
 					result = result * 10 + d;
-					++str;
 				}
-				else
-				{
-					break;
-				}
-			}
 
-			if (outStr) {
-				*outStr = str;
+				++str;
 			}
-
-			if (outError) {
-				*outError = error;
+			else
+			{
+				break;
 			}
-
-			return negative ? -result : result;
 		}
 
-		template<typename IntType>
-		inline void integerToString(IntType value, char* buffer)
+		if (outStr) {
+			*outStr = str;
+		}
+
+		if (outError) {
+			*outError = error;
+		}
+
+		return result;
+	}
+
+	template<typename UIntType>
+	inline UIntType stringToUnsignedInteger(const char* str, const char** outStr = 0, int* outError = 0)
+	{
+		bool negative = false;
+
+		if (*str == '+') {
+			++str;
+		}
+		else if (*str == '-') {
+			++str;
+			negative = true;
+		}
+
+		typename detail::RemoveCV<UIntType>::Type result = 0;
+
+		const typename detail::RemoveCV<UIntType>::Type n = detail::maxValue<UIntType>() / 10;
+		const int m = (int)(detail::maxValue<UIntType>() % 10);
+
+		int error = 0;
+
+		for (;;)
 		{
-			char* p = buffer;
+			char ch = *str;
 
-			if (value == 0)
+			if (detail::isDigit(ch))
 			{
-				p[0] = '0';
-				p[1] = 0;
-				return;
+				char d = ch - '0';
+
+				if (result > n || (result == n && d > m)) {
+					error = 1;
+				}
+
+				result = result * 10 + d;
+				++str;
 			}
-
-			bool negative = false;
-
-			if (value < 0)
+			else
 			{
-				value = -value;
-				negative = true;
+				break;
 			}
-
-			while (value)
-			{
-				*p++ = '0' + (char)(value % 10);
-				value /= 10;
-			}
-
-			if (negative) {
-				*p++ = '-';
-			}
-
-			detail::reverse(buffer, p);
-
-			*p = 0;
 		}
 
-	} // detail
+		if (outStr) {
+			*outStr = str;
+		}
 
+		if (outError) {
+			*outError = error;
+		}
+
+		return negative ? -result : result;
+	}
+
+	template<typename IntType>
+	inline void integerToString(IntType value, char* buffer)
+	{
+		char* p = buffer;
+
+		if (value == 0)
+		{
+			p[0] = '0';
+			p[1] = 0;
+			return;
+		}
+
+		bool negative = false;
+
+		if (value < 0)
+		{
+			value = -value;
+			negative = true;
+		}
+
+		while (value)
+		{
+			*p++ = '0' + (char)(value % 10);
+			value /= 10;
+		}
+
+		if (negative) {
+			*p++ = '-';
+		}
+
+		detail::reverse(buffer, p);
+
+		*p = 0;
+	}
+
+} // detail
 } // eclog
+} // vallest
 
 #if defined(_MSC_VER)
-	#pragma warning(pop)
+#pragma warning(pop)
 #endif
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	double stringToDouble(const char* str, const char** outStr = 0, int* outError = 0);
+	void doubleToString(double d, char* buffer, int fracDigits = -1);
 
-		double stringToDouble(const char* str, const char** outStr = 0, int* outError = 0);
-		void doubleToString(double d, char* buffer, int fracDigits = -1);
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #if defined(_MSC_VER)
 	#pragma warning(push)
 	#pragma warning(disable: 4127)
 #endif
 
+namespace vallest {
 namespace eclog {
 
 	class Value {
@@ -3118,250 +3151,252 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #if defined(_MSC_VER)
 	#pragma warning(pop)
 #endif
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
-
-		class ParseHandler {
-		public:
-			virtual void onObjectBegin(ErrorCode*)
-			{
-			}
-
-			virtual void onObjectEnd(ErrorCode*)
-			{
-			}
-
-			virtual void onArrayBegin(ErrorCode*)
-			{
-			}
-
-			virtual void onArrayEnd(ErrorCode*)
-			{
-			}
-
-			virtual void onKey(const Key&, ErrorCode*)
-			{
-			}
-
-			virtual void onValue(const Value&, ErrorCode*)
-			{
-			}
-		};
-
-	} // detail
-
-} // eclog
-
-namespace eclog {
-
-	namespace detail {
-
-		void parseObject(Context& ctx, ParseHandler& handler, ErrorCode* ec);
-		void parseArray(Context& ctx, ParseHandler& handler, ErrorCode* ec);
-
-	} // detail
-
-} // eclog
-
-namespace eclog {
-
-	namespace detail {
-
-		inline bool checkTerminated(Context& ctx, ErrorCode* ec)
+	class ParseHandler {
+	public:
+		virtual void onObjectBegin(ErrorCode*)
 		{
-			if (ctx.terminated())
-			{
-				ECLOG_ERROR(ParseError, ctx.line(), ctx.column(), pe_user_asked_for_termination);
-				return true;
-			}
-
-			return false;
 		}
 
-		template<typename Handler>
-		class ParseHandlerAdapter : public ParseHandler, private NonCopyable {
-		public:
-			explicit ParseHandlerAdapter(Context& ctx, Handler& handler) :
-				ctx_(ctx), handler_(handler)
-			{
-			}
+		virtual void onObjectEnd(ErrorCode*)
+		{
+		}
 
-			virtual void onObjectBegin(ErrorCode* ec) ECLOG_OVERRIDE
-			{
-				handler_.onObjectBegin();
-				checkTerminated(ctx_, ec);
-			}
+		virtual void onArrayBegin(ErrorCode*)
+		{
+		}
 
-			virtual void onObjectEnd(ErrorCode* ec) ECLOG_OVERRIDE
-			{
-                handler_.onObjectEnd();
-                checkTerminated(ctx_, ec);
-			}
+		virtual void onArrayEnd(ErrorCode*)
+		{
+		}
 
-			virtual void onArrayBegin(ErrorCode* ec) ECLOG_OVERRIDE
-			{
-				handler_.onArrayBegin();
-				checkTerminated(ctx_, ec);
-			}
+		virtual void onKey(const Key&, ErrorCode*)
+		{
+		}
 
-			virtual void onArrayEnd(ErrorCode* ec) ECLOG_OVERRIDE
-			{
-                handler_.onArrayEnd();
-                checkTerminated(ctx_, ec);
-			}
+		virtual void onValue(const Value&, ErrorCode*)
+		{
+		}
+	};
 
-			virtual void onKey(const Key& key, ErrorCode* ec) ECLOG_OVERRIDE
-			{
-				handler_.onKey(key);
-				checkTerminated(ctx_, ec);
-			}
+} // detail
+} // eclog
+} // vallest
 
-			virtual void onValue(const Value& value, ErrorCode* ec) ECLOG_OVERRIDE
-			{
-				if (value.isObject())
-				{
-					parseObject(ctx_, *this, ec);
-				}
-				else if (value.isArray())
-				{
-					parseArray(ctx_, *this, ec);
-				}
-				else
-				{
-					handler_.onValue(value);
-					checkTerminated(ctx_, ec);
-				}
-			}
+namespace vallest {
+namespace eclog {
+namespace detail {
 
-		private:
-			Context& ctx_;
-			Handler& handler_;
-		};
+	void parseObject(Context& ctx, ParseHandler& handler, ErrorCode* ec);
+	void parseArray(Context& ctx, ParseHandler& handler, ErrorCode* ec);
 
-		class IgnoreParseHandler : public ParseHandler, private NonCopyable {
-        public:
-            IgnoreParseHandler(Context& ctx) : ctx_(ctx)
-            {
-            }
+} // detail
+} // eclog
+} // vallest
 
-			virtual void onValue(const Value& value, ErrorCode* ec) ECLOG_OVERRIDE
-			{
-				if (value.isObject())
-				{
-					parseObject(ctx_, *this, ec);
-				}
-				else if (value.isArray())
-				{
-					parseArray(ctx_, *this, ec);
-				}
-			}
+namespace vallest {
+namespace eclog {
+namespace detail {
 
-        private:
-            Context& ctx_;
-        };
+	inline bool checkTerminated(Context& ctx, ErrorCode* ec)
+	{
+		if (ctx.terminated())
+		{
+			ECLOG_ERROR(ParseError, ctx.line(), ctx.column(), pe_user_asked_for_termination);
+			return true;
+		}
 
-		inline void ignore(Context& ctx, Value value, ErrorCode* ec)
+		return false;
+	}
+
+	template<typename Handler>
+	class ParseHandlerAdapter : public ParseHandler, private NonCopyable {
+	public:
+		explicit ParseHandlerAdapter(Context& ctx, Handler& handler) :
+			ctx_(ctx), handler_(handler)
+		{
+		}
+
+		virtual void onObjectBegin(ErrorCode* ec) ECLOG_OVERRIDE
+		{
+			handler_.onObjectBegin();
+			checkTerminated(ctx_, ec);
+		}
+
+		virtual void onObjectEnd(ErrorCode* ec) ECLOG_OVERRIDE
+		{
+            handler_.onObjectEnd();
+            checkTerminated(ctx_, ec);
+		}
+
+		virtual void onArrayBegin(ErrorCode* ec) ECLOG_OVERRIDE
+		{
+			handler_.onArrayBegin();
+			checkTerminated(ctx_, ec);
+		}
+
+		virtual void onArrayEnd(ErrorCode* ec) ECLOG_OVERRIDE
+		{
+            handler_.onArrayEnd();
+            checkTerminated(ctx_, ec);
+		}
+
+		virtual void onKey(const Key& key, ErrorCode* ec) ECLOG_OVERRIDE
+		{
+			handler_.onKey(key);
+			checkTerminated(ctx_, ec);
+		}
+
+		virtual void onValue(const Value& value, ErrorCode* ec) ECLOG_OVERRIDE
 		{
 			if (value.isObject())
 			{
-				IgnoreParseHandler handler(ctx);
-				parseObject(ctx, handler, ec);
+				parseObject(ctx_, *this, ec);
 			}
 			else if (value.isArray())
 			{
-				IgnoreParseHandler handler(ctx);
-				parseArray(ctx, handler, ec);
+				parseArray(ctx_, *this, ec);
+			}
+			else
+			{
+				handler_.onValue(value);
+				checkTerminated(ctx_, ec);
 			}
 		}
 
-		template<typename Handler>
-		class ObjectParseHandlerAdapter : public ParseHandler, private NonCopyable {
-		public:
-			explicit ObjectParseHandlerAdapter(Context& ctx, Handler handler) :
-				ctx_(ctx), handler_(handler)
+	private:
+		Context& ctx_;
+		Handler& handler_;
+	};
+
+	class IgnoreParseHandler : public ParseHandler, private NonCopyable {
+    public:
+        IgnoreParseHandler(Context& ctx) : ctx_(ctx)
+        {
+        }
+
+		virtual void onValue(const Value& value, ErrorCode* ec) ECLOG_OVERRIDE
+		{
+			if (value.isObject())
 			{
+				parseObject(ctx_, *this, ec);
 			}
-
-			virtual void onKey(const Key& key, ErrorCode*) ECLOG_OVERRIDE
+			else if (value.isArray())
 			{
-				key_ = key;
+				parseArray(ctx_, *this, ec);
 			}
+		}
 
-			virtual void onValue(const Value& value, ErrorCode* ec) ECLOG_OVERRIDE
+    private:
+        Context& ctx_;
+    };
+
+	inline void ignore(Context& ctx, Value value, ErrorCode* ec)
+	{
+		if (value.isObject())
+		{
+			IgnoreParseHandler handler(ctx);
+			parseObject(ctx, handler, ec);
+		}
+		else if (value.isArray())
+		{
+			IgnoreParseHandler handler(ctx);
+			parseArray(ctx, handler, ec);
+		}
+	}
+
+	template<typename Handler>
+	class ObjectParseHandlerAdapter : public ParseHandler, private NonCopyable {
+	public:
+		explicit ObjectParseHandlerAdapter(Context& ctx, Handler handler) :
+			ctx_(ctx), handler_(handler)
+		{
+		}
+
+		virtual void onKey(const Key& key, ErrorCode*) ECLOG_OVERRIDE
+		{
+			key_ = key;
+		}
+
+		virtual void onValue(const Value& value, ErrorCode* ec) ECLOG_OVERRIDE
+		{
+			if (value.isObject() || value.isArray())
 			{
-				if (value.isObject() || value.isArray())
-				{
-					const long long oldPos = ctx_.decoder().position();
+				const long long oldPos = ctx_.decoder().position();
 
-					handler_(key_, value);
+				handler_(key_, value);
 
-					if (checkTerminated(ctx_, ec)) {
-						return;
-					}
-
-					if (ctx_.decoder().position() == oldPos) {
-						ignore(ctx_, value, ec);
-					}
+				if (checkTerminated(ctx_, ec)) {
+					return;
 				}
-				else
-				{
-					handler_(key_, value);
-					checkTerminated(ctx_, ec);
-				}
-			}
 
-		private:
-			Context& ctx_;
-			Handler handler_;
-			Key key_;
-		};
-
-		template<typename Handler>
-		class ArrayParseHandlerAdapter : public ParseHandler, private NonCopyable {
-		public:
-			explicit ArrayParseHandlerAdapter(Context& ctx, Handler handler) :
-				ctx_(ctx), handler_(handler)
-			{
-			}
-
-			virtual void onValue(const Value& value, ErrorCode* ec) ECLOG_OVERRIDE
-			{
-				if (value.isObject() || value.isArray())
-				{
-					const long long oldPos = ctx_.decoder().position();
-
-					handler_(value);
-
-					if (checkTerminated(ctx_, ec)) {
-						return;
-					}
-
-					if (ctx_.decoder().position() == oldPos) {
-						ignore(ctx_, value, ec);
-					}
-				}
-				else
-				{
-					handler_(value);
-					checkTerminated(ctx_, ec);
+				if (ctx_.decoder().position() == oldPos) {
+					ignore(ctx_, value, ec);
 				}
 			}
+			else
+			{
+				handler_(key_, value);
+				checkTerminated(ctx_, ec);
+			}
+		}
 
-		private:
-			Context& ctx_;
-			Handler handler_;
-		};
+	private:
+		Context& ctx_;
+		Handler handler_;
+		Key key_;
+	};
 
-	} // detail
+	template<typename Handler>
+	class ArrayParseHandlerAdapter : public ParseHandler, private NonCopyable {
+	public:
+		explicit ArrayParseHandlerAdapter(Context& ctx, Handler handler) :
+			ctx_(ctx), handler_(handler)
+		{
+		}
 
+		virtual void onValue(const Value& value, ErrorCode* ec) ECLOG_OVERRIDE
+		{
+			if (value.isObject() || value.isArray())
+			{
+				const long long oldPos = ctx_.decoder().position();
+
+				handler_(value);
+
+				if (checkTerminated(ctx_, ec)) {
+					return;
+				}
+
+				if (ctx_.decoder().position() == oldPos) {
+					ignore(ctx_, value, ec);
+				}
+			}
+			else
+			{
+				handler_(value);
+				checkTerminated(ctx_, ec);
+			}
+		}
+
+	private:
+		Context& ctx_;
+		Handler handler_;
+	};
+
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	template<typename Handler>
@@ -3407,7 +3442,9 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	enum Linebreak {
@@ -3417,7 +3454,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	struct RendererConfig {
@@ -3492,147 +3531,149 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T, size_t MaxSize>
+	class InlineArray {
+	public:
+		InlineArray() : size_(0)
+		{
+		}
 
-		template<typename T, size_t MaxSize>
-		class InlineArray {
-		public:
-			InlineArray() : size_(0)
-			{
-			}
+		void clear()
+		{
+			size_ = 0;
+		}
 
-			void clear()
-			{
-				size_ = 0;
-			}
+		size_t maxSize() const
+		{
+			return MaxSize;
+		}
 
-			size_t maxSize() const
-			{
-				return MaxSize;
-			}
+		size_t size() const
+		{
+			return size_;
+		}
 
-			size_t size() const
-			{
-				return size_;
-			}
+		void resize(size_t size)
+		{
+			ECLOG_ASSERT(size <= MaxSize);
+			size_ = size;
+		}
 
-			void resize(size_t size)
-			{
-				ECLOG_ASSERT(size <= MaxSize);
-				size_ = size;
-			}
+		T& operator[](size_t index)
+		{
+			return array_[index];
+		}
 
-			T& operator[](size_t index)
-			{
-				return array_[index];
-			}
+		const T& operator[](size_t index) const
+		{
+			return array_[index];
+		}
 
-			const T& operator[](size_t index) const
-			{
-				return array_[index];
-			}
+		void pushBack(const T& value)
+		{
+			ECLOG_ASSERT(size_ < MaxSize);
+			array_[size_++] = value;
+		}
 
-			void pushBack(const T& value)
-			{
-				ECLOG_ASSERT(size_ < MaxSize);
-				array_[size_++] = value;
-			}
+		void popBack()
+		{
+			ECLOG_ASSERT(size_ > 0);
+			--size_;
+		}
 
-			void popBack()
-			{
-				ECLOG_ASSERT(size_ > 0);
-				--size_;
-			}
+		T* data()
+		{
+			return array_;
+		}
 
-			T* data()
-			{
-				return array_;
-			}
+		const T* data() const
+		{
+			return array_;
+		}
 
-			const T* data() const
-			{
-				return array_;
-			}
+	private:
+		T array_[MaxSize];
 
-		private:
-			T array_[MaxSize];
+		size_t size_;
+	};
 
-			size_t size_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #include <string.h> // memcpy
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class StringDelimiter {
+	public:
+		void clear()
+		{
+			d_.clear();
+		}
 
-		class StringDelimiter {
-		public:
-			void clear()
-			{
-				d_.clear();
+		size_t size() const
+		{
+			return d_.size();
+		}
+
+		bool assign(cstring str)
+		{
+			if (!validate(str)) {
+				return false;
 			}
 
-			size_t size() const
+			d_.resize(str.size());
+
+			if (str.size())
 			{
-				return d_.size();
+				memcpy(d_.data(), str.data(), str.size());
 			}
 
-			bool assign(cstring str)
+			return true;
+		}
+
+		operator cstring() const
+		{
+			return cstring(d_.data(), d_.data() + d_.size());
+		}
+
+		static bool validate(cstring str)
+		{
+			if (str.size() > 16) {
+				return false;
+			}
+
+			for (const char* s = str.begin(); s != str.end(); ++s)
 			{
-				if (!validate(str)) {
+				if (!isAlphanum(*s) && *s != '_') {
 					return false;
 				}
-
-				d_.resize(str.size());
-
-				if (str.size())
-				{
-					memcpy(d_.data(), str.data(), str.size());
-				}
-
-				return true;
 			}
 
-			operator cstring() const
-			{
-				return cstring(d_.data(), d_.data() + d_.size());
-			}
+			return true;
+		}
 
-			static bool validate(cstring str)
-			{
-				if (str.size() > 16) {
-					return false;
-				}
+	private:
+		InlineArray<char, 16> d_;
+	};
 
-				for (const char* s = str.begin(); s != str.end(); ++s)
-				{
-					if (!isAlphanum(*s) && *s != '_') {
-						return false;
-					}
-				}
-
-				return true;
-			}
-
-		private:
-			InlineArray<char, 16> d_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class KeyDesc {
@@ -3672,7 +3713,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	enum EmptyObjectTag {
@@ -3680,7 +3723,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	enum EmptyArrayTag {
@@ -3688,7 +3733,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	template<typename T1, typename T2>
@@ -3717,7 +3764,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class ValueDesc {
@@ -4024,7 +4073,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class ObjectDesc : public ValueDesc {
@@ -4048,7 +4099,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class Renderer;
@@ -4074,7 +4127,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class NumberDesc : public ValueDesc {
@@ -4090,7 +4145,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class StringDesc : public ValueDesc {
@@ -4106,122 +4163,124 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
-
-		class Renderer : private NonCopyable {
-		private:
-			enum {
-				separator_linebreak = 1,
-				separator_comma,
-			};
-
-		public:
-			explicit Renderer(OutputStream& stream, const RendererConfig& rendererConfig);
-
-			void beginObject(const KeyDesc& key, ErrorCode* ec);
-			void beginObject(ErrorCode* ec);
-			void endObject(ErrorCode* ec);
-
-			void beginArray(const KeyDesc& key, ErrorCode* ec);
-			void beginArray(ErrorCode* ec);
-			void endArray(ErrorCode* ec);
-
-			void renderMember(const KeyDesc& key, const ValueDesc& value, ErrorCode* ec);
-			void renderMember(const ValueDesc& value, ErrorCode* ec);
-
-			void renderEmptyLines(int count, ErrorCode* ec);
-
-			void renderComment(cstring comment, ErrorCode* ec);
-
-			int beginInline();
-			int endInline();
-
-			void close(ErrorCode* ec);
-
-			const RendererConfig& rendererConfig() const;
-
-		private:
-			void beginItem(ErrorCode* ec);
-			void endItem();
-
-			void beginStruct(ErrorCode* ec);
-			void endStruct(ErrorCode* ec);
-
-			void renderValueInternal(const ValueDesc& value, ErrorCode* ec);
-
-			void renderString(cstring str, StringNotation notation, cstring delimiter, ErrorCode* ec);
-
-			void renderQuotedString(cstring str, ErrorCode* ec);
-			void renderUnquotedString(cstring str, ErrorCode* ec);
-			void renderRawString(cstring str, cstring delimiter, ErrorCode* ec);
-			void renderHeredoc(cstring str, cstring delimiter, ErrorCode* ec);
-
-			void renderNumber(const Number& number, int fracDigits, ErrorCode* ec);
-
-			void renderLinebreak(ErrorCode* ec);
-			void renderIndent(ErrorCode* ec);
-			void renderSeparator(ErrorCode* ec);
-			void renderSpace(ErrorCode* ec);
-			void renderLeftCurlyBracket(ErrorCode* ec);
-			void renderRightCurlyBracket(ErrorCode* ec);
-			void renderLeftSquareBracket(ErrorCode* ec);
-			void renderRightSquareBracket(ErrorCode* ec);
-			void renderColon(ErrorCode* ec);
-			void renderComma(ErrorCode* ec);
-			void renderSequence(cstring s, ErrorCode* ec);
-			void renderChar(int ch, ErrorCode* ec);
-
-			void increaseNestingLevel();
-			void decreaseNestingLevel();
-			int nestingLevel() const;
-
-			void increaseIndent();
-			void decreaseIndent();
-			int indent() const;
-
-			void setError(int error = 1);
-			int error() const;
-
-		private:
-			UTF8Encoder encoder_;
-			RendererConfig rc_;
-
-			int nestingLevel_;
-			int indent_;
-			bool beginOfLine_;
-			int separator_;
-			int inline_;
-
-			int error_;
+	class Renderer : private NonCopyable {
+	private:
+		enum {
+			separator_linebreak = 1,
+			separator_comma,
 		};
 
-	} // detail
+	public:
+		explicit Renderer(OutputStream& stream, const RendererConfig& rendererConfig);
 
+		void beginObject(const KeyDesc& key, ErrorCode* ec);
+		void beginObject(ErrorCode* ec);
+		void endObject(ErrorCode* ec);
+
+		void beginArray(const KeyDesc& key, ErrorCode* ec);
+		void beginArray(ErrorCode* ec);
+		void endArray(ErrorCode* ec);
+
+		void renderMember(const KeyDesc& key, const ValueDesc& value, ErrorCode* ec);
+		void renderMember(const ValueDesc& value, ErrorCode* ec);
+
+		void renderEmptyLines(int count, ErrorCode* ec);
+
+		void renderComment(cstring comment, ErrorCode* ec);
+
+		int beginInline();
+		int endInline();
+
+		void close(ErrorCode* ec);
+
+		const RendererConfig& rendererConfig() const;
+
+	private:
+		void beginItem(ErrorCode* ec);
+		void endItem();
+
+		void beginStruct(ErrorCode* ec);
+		void endStruct(ErrorCode* ec);
+
+		void renderValueInternal(const ValueDesc& value, ErrorCode* ec);
+
+		void renderString(cstring str, StringNotation notation, cstring delimiter, ErrorCode* ec);
+
+		void renderQuotedString(cstring str, ErrorCode* ec);
+		void renderUnquotedString(cstring str, ErrorCode* ec);
+		void renderRawString(cstring str, cstring delimiter, ErrorCode* ec);
+		void renderHeredoc(cstring str, cstring delimiter, ErrorCode* ec);
+
+		void renderNumber(const Number& number, int fracDigits, ErrorCode* ec);
+
+		void renderLinebreak(ErrorCode* ec);
+		void renderIndent(ErrorCode* ec);
+		void renderSeparator(ErrorCode* ec);
+		void renderSpace(ErrorCode* ec);
+		void renderLeftCurlyBracket(ErrorCode* ec);
+		void renderRightCurlyBracket(ErrorCode* ec);
+		void renderLeftSquareBracket(ErrorCode* ec);
+		void renderRightSquareBracket(ErrorCode* ec);
+		void renderColon(ErrorCode* ec);
+		void renderComma(ErrorCode* ec);
+		void renderSequence(cstring s, ErrorCode* ec);
+		void renderChar(int ch, ErrorCode* ec);
+
+		void increaseNestingLevel();
+		void decreaseNestingLevel();
+		int nestingLevel() const;
+
+		void increaseIndent();
+		void decreaseIndent();
+		int indent() const;
+
+		void setError(int error = 1);
+		int error() const;
+
+	private:
+		UTF8Encoder encoder_;
+		RendererConfig rc_;
+
+		int nestingLevel_;
+		int indent_;
+		bool beginOfLine_;
+		int separator_;
+		int inline_;
+
+		int error_;
+	};
+
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	enum RendererState {
+		renderer_state_init = 0,
+		renderer_state_element = 1,
+		renderer_state_object = 2,
+		renderer_state_array = 3,
+		renderer_state_closed = 4,
 
-		enum RendererState {
-			renderer_state_init = 0,
-			renderer_state_element = 1,
-			renderer_state_object = 2,
-			renderer_state_array = 3,
-			renderer_state_closed = 4,
+		renderer_state_ref_1 = 1 << 4,
+		renderer_state_ref_2 = 2 << 4,
+		renderer_state_root = 3 << 4,
+	};
 
-			renderer_state_ref_1 = 1 << 4,
-			renderer_state_ref_2 = 2 << 4,
-			renderer_state_root = 3 << 4,
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class Renderer : private detail::NonCopyable {
@@ -4406,24 +4465,26 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class NonAssignable {
+	protected:
+		NonAssignable() {}
+		~NonAssignable() {}
 
-		class NonAssignable {
-		protected:
-			NonAssignable() {}
-			~NonAssignable() {}
+	private:
+		NonAssignable& operator=(const NonAssignable&);
+	};
 
-		private:
-			NonAssignable& operator=(const NonAssignable&);
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class ObjectRenderer : private detail::NonAssignable {
@@ -4635,7 +4696,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class ArrayRenderer : private detail::NonAssignable {
@@ -4847,13 +4910,15 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <stdlib.h> // malloc
 
 #ifndef ECLOG_DEFAULT_ALLOCATOR
-	#define ECLOG_DEFAULT_ALLOCATOR eclog::Allocator
+	#define ECLOG_DEFAULT_ALLOCATOR vallest::eclog::Allocator
 #endif
 
+namespace vallest {
 namespace eclog {
 
 	class Allocator {
@@ -4876,683 +4941,685 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <string.h> // memcpy, memmove
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T, typename Alloc>
+	class PODArray {
+	public:
+		PODArray() : size_(0), capacity_(0), v_(0)
+		{
+		}
 
-		template<typename T, typename Alloc>
-		class PODArray {
-		public:
-			PODArray() : size_(0), capacity_(0), v_(0)
-			{
-			}
+		PODArray(const T* data, size_t size) : size_(0), capacity_(0), v_(0)
+		{
+			append(data, size);
+		}
 
-			PODArray(const T* data, size_t size) : size_(0), capacity_(0), v_(0)
-			{
-				append(data, size);
-			}
+		PODArray(const PODArray& other) : size_(0), capacity_(0), v_(0)
+		{
+			assign(other);
+		}
 
-			PODArray(const PODArray& other) : size_(0), capacity_(0), v_(0)
-			{
+		~PODArray()
+		{
+			reset(0, 0, 0);
+		}
+
+		PODArray& operator=(const PODArray& other)
+		{
+			if (this != &other) {
 				assign(other);
 			}
 
-			~PODArray()
-			{
-				reset(0, 0, 0);
-			}
-
-			PODArray& operator=(const PODArray& other)
-			{
-				if (this != &other) {
-					assign(other);
-				}
-
-				return *this;
-			}
-
-			void clear()
-			{
-				size_ = 0;
-			}
-
-			bool empty() const
-			{
-				return size_ == 0;
-			}
-
-			size_t size() const
-			{
-				return size_;
-			}
-
-			size_t maxSize() const
-			{
-				return maxValue<size_t>() / sizeof(T);
-			}
-
-			size_t capacity() const
-			{
-				return capacity_;
-			}
-
-			void reserve(size_t capacity)
-			{
-				if (capacity > maxSize()) {
-					ECLOG_FAULT(LengthError);
-				}
-
-				if (capacity > capacity_) {
-					reset(makeCopy(capacity), size_, capacity);
-				}
-			}
-
-			T& operator[](size_t index)
-			{
-				ECLOG_ASSERT(index < size_);
-				return v_[index];
-			}
-
-			const T& operator[](size_t index) const
-			{
-				ECLOG_ASSERT(index < size_);
-				return v_[index];
-			}
-
-			T& front()
-			{
-				ECLOG_ASSERT(size_ > 0);
-				return v_[0];
-			}
-
-			const T& front() const
-			{
-				ECLOG_ASSERT(size_ > 0);
-				return v_[0];
-			}
-
-			T& back()
-			{
-				ECLOG_ASSERT(size_ > 0);
-				return v_[size_ - 1];
-			}
-
-			const T& back() const
-			{
-				ECLOG_ASSERT(size_ > 0);
-				return v_[size_ - 1];
-			}
-
-			T* data()
-			{
-				return v_;
-			}
-
-			const T* data() const
-			{
-				return v_;
-			}
-
-			size_t insert(size_t index, const T& value)
-			{
-				return insert(index, &value, 1);
-			}
-
-			size_t insert(size_t index, const T* ptr, size_t count)
-			{
-				ECLOG_ASSERT(ptr != 0);
-
-				if (count > maxSize() - size_) {
-					ECLOG_FAULT(LengthError);
-				}
-
-				if (index >= size_)
-				{
-					append(ptr, count);
-				}
-				else if (count <= capacity_ - size_)
-				{
-					memmove(v_ + index + count, v_ + index, sizeof(T) * (size_ - index));
-
-					memcpy(v_ + index, ptr, sizeof(T) *count);
-
-					size_ += count;
-				}
-				else
-				{
-					size_t capacity = growTo(size_ + count);
-
-					T* v = (T*)Alloc::allocate(sizeof(T) * capacity);
-
-					memcpy(v + index, ptr, sizeof(T) * count);
-
-					if (v_)
-					{
-						memcpy(v, v_, sizeof(T) * index);
-						memcpy(v + index + count, v_ + index, sizeof(T) * (size_ - index));
-					}
-
-					reset(v, size_ + count, capacity);
-				}
-
-				return index;
-			}
-
-			void pushBack(const T& value)
-			{
-				append(&value, 1);
-			}
-
-			void popBack()
-			{
-				ECLOG_ASSERT(size_ > 0);
-				size_ -= 1;
-			}
-
-			void append(const T* ptr, size_t count)
-			{
-				ECLOG_ASSERT(ptr != 0);
-
-				if (count > maxSize() - size_) {
-					ECLOG_FAULT(LengthError);
-				}
-
-				if (count <= capacity_ - size_)
-				{
-					memcpy(v_ + size_, ptr, sizeof(T) * count);
-
-					size_ += count;
-				}
-				else
-				{
-					size_t capacity = growTo(size_ + count);
-
-					T* v = makeCopy(capacity);
-
-					memcpy(v + size_, ptr, sizeof(T) * count);
-
-					reset(v, size_ + count, capacity);
-				}
-			}
-
-			void remove(size_t index, size_t count = 1)
-			{
-				if (index < size_)
-				{
-					if (count > size_ - index) {
-						count = size_ - index;
-					}
-
-					memmove(v_ + index, v_ + index + count, sizeof(T) * (size_ - index - count));
-
-					size_ -= count;
-				}
-			}
-
-			void swap(PODArray& other)
-			{
-				detail::swap(size_, other.size_);
-				detail::swap(capacity_, other.capacity_);
-				detail::swap(v_, other.v_);
-			}
-
-		private:
-			void reset(T* v, size_t size, size_t capacity)
-			{
-				if (v_) {
-					Alloc::deallocate(v_);
-				}
-
-				size_ = size;
-				capacity_ = capacity;
-				v_ = v;
-			}
-
-			T* makeCopy(size_t size) const
-			{
-				if (size > maxSize()) {
-					ECLOG_FAULT(LengthError);
-				}
-
-				T* v = (T*)Alloc::allocate(sizeof(T) * size);
-
-				if (v_) {
-					memcpy(v, v_, sizeof(T) * min(size_, size));
-				}
-
-				return v;
-			}
-
-			size_t growTo(size_t size) const
-			{
-				size_t capacity = maxSize() - capacity_ / 2 < capacity_ ?
-					0 : capacity_ + capacity_ / 2;
-
-				return max(capacity, size);
-			}
-
-			void assign(const PODArray& other)
-			{
-				if (other.size_ == 0)
-				{
-					clear();
-				}
-				else if (capacity_ >= other.size_)
-				{
-					memcpy(v_, other.v_, sizeof(T) * other.size_);
-
-					size_ = other.size_;
-				}
-				else
-				{
-					PODArray t(other.v_, other.size_);
-
-					swap(t);
-				}
-			}
-
-		private:
-			size_t size_;
-			size_t capacity_;
-			T* v_;
-		};
-
-		template<typename T, typename Alloc>
-		inline void swap(PODArray<T, Alloc>& a, PODArray<T, Alloc>& b)
-		{
-			a.swap(b);
+			return *this;
 		}
 
-	} // detail
+		void clear()
+		{
+			size_ = 0;
+		}
 
-} // eclog
+		bool empty() const
+		{
+			return size_ == 0;
+		}
 
-namespace eclog {
+		size_t size() const
+		{
+			return size_;
+		}
 
-	namespace detail {
+		size_t maxSize() const
+		{
+			return maxValue<size_t>() / sizeof(T);
+		}
 
-		template<typename Alloc>
-		class ByteArray {
-		public:
-			ByteArray()
-			{
+		size_t capacity() const
+		{
+			return capacity_;
+		}
+
+		void reserve(size_t capacity)
+		{
+			if (capacity > maxSize()) {
+				ECLOG_FAULT(LengthError);
 			}
 
-			ByteArray(cstring str)
+			if (capacity > capacity_) {
+				reset(makeCopy(capacity), size_, capacity);
+			}
+		}
+
+		T& operator[](size_t index)
+		{
+			ECLOG_ASSERT(index < size_);
+			return v_[index];
+		}
+
+		const T& operator[](size_t index) const
+		{
+			ECLOG_ASSERT(index < size_);
+			return v_[index];
+		}
+
+		T& front()
+		{
+			ECLOG_ASSERT(size_ > 0);
+			return v_[0];
+		}
+
+		const T& front() const
+		{
+			ECLOG_ASSERT(size_ > 0);
+			return v_[0];
+		}
+
+		T& back()
+		{
+			ECLOG_ASSERT(size_ > 0);
+			return v_[size_ - 1];
+		}
+
+		const T& back() const
+		{
+			ECLOG_ASSERT(size_ > 0);
+			return v_[size_ - 1];
+		}
+
+		T* data()
+		{
+			return v_;
+		}
+
+		const T* data() const
+		{
+			return v_;
+		}
+
+		size_t insert(size_t index, const T& value)
+		{
+			return insert(index, &value, 1);
+		}
+
+		size_t insert(size_t index, const T* ptr, size_t count)
+		{
+			ECLOG_ASSERT(ptr != 0);
+
+			if (count > maxSize() - size_) {
+				ECLOG_FAULT(LengthError);
+			}
+
+			if (index >= size_)
+			{
+				append(ptr, count);
+			}
+			else if (count <= capacity_ - size_)
+			{
+				memmove(v_ + index + count, v_ + index, sizeof(T) * (size_ - index));
+
+				memcpy(v_ + index, ptr, sizeof(T) *count);
+
+				size_ += count;
+			}
+			else
+			{
+				size_t capacity = growTo(size_ + count);
+
+				T* v = (T*)Alloc::allocate(sizeof(T) * capacity);
+
+				memcpy(v + index, ptr, sizeof(T) * count);
+
+				if (v_)
+				{
+					memcpy(v, v_, sizeof(T) * index);
+					memcpy(v + index + count, v_ + index, sizeof(T) * (size_ - index));
+				}
+
+				reset(v, size_ + count, capacity);
+			}
+
+			return index;
+		}
+
+		void pushBack(const T& value)
+		{
+			append(&value, 1);
+		}
+
+		void popBack()
+		{
+			ECLOG_ASSERT(size_ > 0);
+			size_ -= 1;
+		}
+
+		void append(const T* ptr, size_t count)
+		{
+			ECLOG_ASSERT(ptr != 0);
+
+			if (count > maxSize() - size_) {
+				ECLOG_FAULT(LengthError);
+			}
+
+			if (count <= capacity_ - size_)
+			{
+				memcpy(v_ + size_, ptr, sizeof(T) * count);
+
+				size_ += count;
+			}
+			else
+			{
+				size_t capacity = growTo(size_ + count);
+
+				T* v = makeCopy(capacity);
+
+				memcpy(v + size_, ptr, sizeof(T) * count);
+
+				reset(v, size_ + count, capacity);
+			}
+		}
+
+		void remove(size_t index, size_t count = 1)
+		{
+			if (index < size_)
+			{
+				if (count > size_ - index) {
+					count = size_ - index;
+				}
+
+				memmove(v_ + index, v_ + index + count, sizeof(T) * (size_ - index - count));
+
+				size_ -= count;
+			}
+		}
+
+		void swap(PODArray& other)
+		{
+			detail::swap(size_, other.size_);
+			detail::swap(capacity_, other.capacity_);
+			detail::swap(v_, other.v_);
+		}
+
+	private:
+		void reset(T* v, size_t size, size_t capacity)
+		{
+			if (v_) {
+				Alloc::deallocate(v_);
+			}
+
+			size_ = size;
+			capacity_ = capacity;
+			v_ = v;
+		}
+
+		T* makeCopy(size_t size) const
+		{
+			if (size > maxSize()) {
+				ECLOG_FAULT(LengthError);
+			}
+
+			T* v = (T*)Alloc::allocate(sizeof(T) * size);
+
+			if (v_) {
+				memcpy(v, v_, sizeof(T) * min(size_, size));
+			}
+
+			return v;
+		}
+
+		size_t growTo(size_t size) const
+		{
+			size_t capacity = maxSize() - capacity_ / 2 < capacity_ ?
+				0 : capacity_ + capacity_ / 2;
+
+			return max(capacity, size);
+		}
+
+		void assign(const PODArray& other)
+		{
+			if (other.size_ == 0)
+			{
+				clear();
+			}
+			else if (capacity_ >= other.size_)
+			{
+				memcpy(v_, other.v_, sizeof(T) * other.size_);
+
+				size_ = other.size_;
+			}
+			else
+			{
+				PODArray t(other.v_, other.size_);
+
+				swap(t);
+			}
+		}
+
+	private:
+		size_t size_;
+		size_t capacity_;
+		T* v_;
+	};
+
+	template<typename T, typename Alloc>
+	inline void swap(PODArray<T, Alloc>& a, PODArray<T, Alloc>& b)
+	{
+		a.swap(b);
+	}
+
+} // detail
+} // eclog
+} // vallest
+
+namespace vallest {
+namespace eclog {
+namespace detail {
+
+	template<typename Alloc>
+	class ByteArray {
+	public:
+		ByteArray()
+		{
+		}
+
+		ByteArray(cstring str)
+		{
+			init(str);
+		}
+
+		ByteArray(const ByteArray& other) : v_(other.v_)
+		{
+		}
+
+		ByteArray& operator=(const ByteArray& other)
+		{
+			if (this != &other) {
+				v_ = other.v_;
+			}
+
+			return *this;
+		}
+
+		ByteArray& operator=(cstring str)
+		{
+			ByteArray t(str);
+
+			swap(t);
+
+			return *this;
+		}
+
+		void clear()
+		{
+			v_.clear();
+		}
+
+		bool empty() const
+		{
+			return size() == 0;
+		}
+
+		size_t size() const
+		{
+			return v_.empty() ? 0 : v_.size() - 1;
+		}
+
+		size_t maxSize() const
+		{
+			return v_.maxSize() - 1;
+		}
+
+		size_t capacity() const
+		{
+			return v_.capacity() - 1;
+		}
+
+		void reserve(size_t capacity)
+		{
+			v_.reserve(capacity + 1);
+		}
+
+		char& operator[](size_t pos)
+		{
+			ECLOG_ASSERT(pos < size());
+			return v_[pos];
+		}
+
+		const char& operator[](size_t pos) const
+		{
+			ECLOG_ASSERT(pos < size());
+			return v_[pos];
+		}
+
+		char* data()
+		{
+			return v_.data();
+		}
+
+		const char* data() const
+		{
+			return v_.data();
+		}
+
+		cstring str() const
+		{
+			return size() ? cstring(data(), size()) : "";
+		}
+
+		void insert(size_t pos, char byte)
+		{
+			if (v_.empty())
+			{
+				init(cstring(&byte, 1));
+			}
+			else
+			{
+				if (pos > size()) {
+					pos = size();
+				}
+
+				v_.insert(pos, byte);
+			}
+		}
+
+		void insert(size_t pos, cstring str)
+		{
+			if (v_.empty())
 			{
 				init(str);
 			}
-
-			ByteArray(const ByteArray& other) : v_(other.v_)
+			else if (str)
 			{
-			}
-
-			ByteArray& operator=(const ByteArray& other)
-			{
-				if (this != &other) {
-					v_ = other.v_;
+				if (pos > size()) {
+					pos = size();
 				}
 
-				return *this;
+				v_.insert(pos, str.data(), str.size());
 			}
-
-			ByteArray& operator=(cstring str)
-			{
-				ByteArray t(str);
-
-				swap(t);
-
-				return *this;
-			}
-
-			void clear()
-			{
-				v_.clear();
-			}
-
-			bool empty() const
-			{
-				return size() == 0;
-			}
-
-			size_t size() const
-			{
-				return v_.empty() ? 0 : v_.size() - 1;
-			}
-
-			size_t maxSize() const
-			{
-				return v_.maxSize() - 1;
-			}
-
-			size_t capacity() const
-			{
-				return v_.capacity() - 1;
-			}
-
-			void reserve(size_t capacity)
-			{
-				v_.reserve(capacity + 1);
-			}
-
-			char& operator[](size_t pos)
-			{
-				ECLOG_ASSERT(pos < size());
-				return v_[pos];
-			}
-
-			const char& operator[](size_t pos) const
-			{
-				ECLOG_ASSERT(pos < size());
-				return v_[pos];
-			}
-
-			char* data()
-			{
-				return v_.data();
-			}
-
-			const char* data() const
-			{
-				return v_.data();
-			}
-
-			cstring str() const
-			{
-				return size() ? cstring(data(), size()) : "";
-			}
-
-			void insert(size_t pos, char byte)
-			{
-				if (v_.empty())
-				{
-					init(cstring(&byte, 1));
-				}
-				else
-				{
-					if (pos > size()) {
-						pos = size();
-					}
-
-					v_.insert(pos, byte);
-				}
-			}
-
-			void insert(size_t pos, cstring str)
-			{
-				if (v_.empty())
-				{
-					init(str);
-				}
-				else if (str)
-				{
-					if (pos > size()) {
-						pos = size();
-					}
-
-					v_.insert(pos, str.data(), str.size());
-				}
-			}
-
-			void append(char byte)
-			{
-				insert(size(), byte);
-			}
-
-			void append(cstring str)
-			{
-				insert(size(), str);
-			}
-
-			void remove(size_t pos, size_t count = -1)
-			{
-				if (pos >= size()) {
-					return;
-				}
-
-				if (count > size() - pos) {
-					count = size() - pos;
-				}
-
-				v_.remove(pos, count);
-			}
-
-			void swap(ByteArray& other)
-			{
-				v_.swap(other.v_);
-			}
-
-		private:
-			void init(cstring str)
-			{
-				if (str)
-				{
-					v_.reserve(str.size() + 1);
-					v_.append(str.data(), str.size());
-					v_.append("", 1);
-				}
-			}
-
-		private:
-			PODArray<char, Alloc> v_;
-		};
-
-		template<typename Alloc>
-		inline void swap(ByteArray<Alloc>& a, ByteArray<Alloc>& b)
-		{
-			a.swap(b);
 		}
 
-	} // detail
+		void append(char byte)
+		{
+			insert(size(), byte);
+		}
 
+		void append(cstring str)
+		{
+			insert(size(), str);
+		}
+
+		void remove(size_t pos, size_t count = -1)
+		{
+			if (pos >= size()) {
+				return;
+			}
+
+			if (count > size() - pos) {
+				count = size() - pos;
+			}
+
+			v_.remove(pos, count);
+		}
+
+		void swap(ByteArray& other)
+		{
+			v_.swap(other.v_);
+		}
+
+	private:
+		void init(cstring str)
+		{
+			if (str)
+			{
+				v_.reserve(str.size() + 1);
+				v_.append(str.data(), str.size());
+				v_.append("", 1);
+			}
+		}
+
+	private:
+		PODArray<char, Alloc> v_;
+	};
+
+	template<typename Alloc>
+	inline void swap(ByteArray<Alloc>& a, ByteArray<Alloc>& b)
+	{
+		a.swap(b);
+	}
+
+} // detail
 } // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T>
+	inline T* construct(void* ptr)
+	{
+		return new(ptr) T();
+	}
 
-		template<typename T>
-		inline T* construct(void* ptr)
-		{
-			return new(ptr) T();
+	template<typename T, typename A1>
+	inline T* construct(void* ptr, const A1& arg1)
+	{
+		return new(ptr) T(arg1);
+	}
+
+	template<typename T, typename A1, typename A2>
+	inline T* construct(void* ptr, const A1& arg1, const A2& arg2)
+	{
+		return new(ptr) T(arg1, arg2);
+	}
+
+	template<typename T, typename A1, typename A2, typename A3>
+	inline T* construct(void* ptr, const A1& arg1, const A2& arg2, const A3& arg3)
+	{
+		return new(ptr) T(arg1, arg2, arg3);
+	}
+
+	template<typename T>
+	inline void destruct(T* ptr)
+	{
+		(void)ptr;
+
+		ECLOG_WARNING_PUSH
+		ECLOG_WARNING_IGNORE_DELETE_NON_VIRTUAL_DTOR
+		ptr->~T();
+		ECLOG_WARNING_POP
+	}
+
+	template<typename T>
+	inline void destructRange(T* first, T* last)
+	{
+		for (; first != last; ++first) {
+			destruct(first);
 		}
+	}
 
-		template<typename T, typename A1>
-		inline T* construct(void* ptr, const A1& arg1)
+	template<typename T, typename InputIterator>
+	inline void constructN(void* ptr, size_t n, InputIterator it)
+	{
+		T* last = (T*)ptr;
+
+		ECLOG_TRY
 		{
-			return new(ptr) T(arg1);
-		}
-
-		template<typename T, typename A1, typename A2>
-		inline T* construct(void* ptr, const A1& arg1, const A2& arg2)
-		{
-			return new(ptr) T(arg1, arg2);
-		}
-
-		template<typename T, typename A1, typename A2, typename A3>
-		inline T* construct(void* ptr, const A1& arg1, const A2& arg2, const A3& arg3)
-		{
-			return new(ptr) T(arg1, arg2, arg3);
-		}
-
-		template<typename T>
-		inline void destruct(T* ptr)
-		{
-			(void)ptr;
-
-			ECLOG_WARNING_PUSH
-			ECLOG_WARNING_IGNORE_DELETE_NON_VIRTUAL_DTOR
-			ptr->~T();
-			ECLOG_WARNING_POP
-		}
-
-		template<typename T>
-		inline void destructRange(T* first, T* last)
-		{
-			for (; first != last; ++first) {
-				destruct(first);
+			for (size_t i = 0; i < n; ++i)
+			{
+				construct<T>(last, *it);
+				++last;
+				++it;
 			}
 		}
-
-		template<typename T, typename InputIterator>
-		inline void constructN(void* ptr, size_t n, InputIterator it)
+		ECLOG_CATCH_ALL
 		{
-			T* last = (T*)ptr;
-
-			ECLOG_TRY
-			{
-				for (size_t i = 0; i < n; ++i)
-				{
-					construct<T>(last, *it);
-					++last;
-					++it;
-				}
-			}
-			ECLOG_CATCH_ALL
-			{
-				destructRange((T*)ptr, last);
-				ECLOG_RETHROW;
-			}
-		}
-
-		template<typename T, typename Alloc>
-		inline T* create()
-		{
-			T* ptr = (T*)Alloc::allocate(sizeof(T));
-
-			ECLOG_TRY
-			{
-				construct<T>(ptr);
-			}
-			ECLOG_CATCH_ALL
-			{
-				Alloc::deallocate(ptr);
-				ECLOG_RETHROW;
-			}
-
-			return ptr;
-		}
-
-		template<typename T, typename Alloc, typename A1>
-		inline T* create(const A1& arg1)
-		{
-			T* ptr = (T*)Alloc::allocate(sizeof(T));
-
-			ECLOG_TRY
-			{
-				construct<T>(ptr, arg1);
-			}
-			ECLOG_CATCH_ALL
-			{
-				Alloc::deallocate(ptr);
-				ECLOG_RETHROW;
-			}
-
-			return ptr;
-		}
-
-		template<typename T, typename Alloc, typename A1, typename A2>
-		inline T* create(const A1& arg1, const A2& arg2)
-		{
-			T* ptr = (T*)Alloc::allocate(sizeof(T));
-
-			ECLOG_TRY
-			{
-				construct<T>(ptr, arg1, arg2);
-			}
-				ECLOG_CATCH_ALL
-			{
-				Alloc::deallocate(ptr);
+			destructRange((T*)ptr, last);
 			ECLOG_RETHROW;
-			}
-
-			return ptr;
 		}
+	}
 
-		template<typename T, typename Alloc, typename A1, typename A2, typename A3>
-		inline T* create(const A1& arg1, const A2& arg2, const A3& arg3)
+	template<typename T, typename Alloc>
+	inline T* create()
+	{
+		T* ptr = (T*)Alloc::allocate(sizeof(T));
+
+		ECLOG_TRY
 		{
-			T* ptr = (T*)Alloc::allocate(sizeof(T));
-
-			ECLOG_TRY
-			{
-				construct<T>(ptr, arg1, arg2, arg3);
-			}
-				ECLOG_CATCH_ALL
-			{
-				Alloc::deallocate(ptr);
-			ECLOG_RETHROW;
-			}
-
-			return ptr;
+			construct<T>(ptr);
 		}
-
-		template<typename T, typename Alloc>
-		inline void destroy(T* ptr)
+		ECLOG_CATCH_ALL
 		{
-			destruct<T>(ptr);
 			Alloc::deallocate(ptr);
+			ECLOG_RETHROW;
 		}
 
-		template<typename T, typename Alloc>
-		class UniquePtr : private NonCopyable {
-		public:
-			explicit UniquePtr(T* ptr) : ptr_(ptr)
-			{
+		return ptr;
+	}
+
+	template<typename T, typename Alloc, typename A1>
+	inline T* create(const A1& arg1)
+	{
+		T* ptr = (T*)Alloc::allocate(sizeof(T));
+
+		ECLOG_TRY
+		{
+			construct<T>(ptr, arg1);
+		}
+		ECLOG_CATCH_ALL
+		{
+			Alloc::deallocate(ptr);
+			ECLOG_RETHROW;
+		}
+
+		return ptr;
+	}
+
+	template<typename T, typename Alloc, typename A1, typename A2>
+	inline T* create(const A1& arg1, const A2& arg2)
+	{
+		T* ptr = (T*)Alloc::allocate(sizeof(T));
+
+		ECLOG_TRY
+		{
+			construct<T>(ptr, arg1, arg2);
+		}
+			ECLOG_CATCH_ALL
+		{
+			Alloc::deallocate(ptr);
+		ECLOG_RETHROW;
+		}
+
+		return ptr;
+	}
+
+	template<typename T, typename Alloc, typename A1, typename A2, typename A3>
+	inline T* create(const A1& arg1, const A2& arg2, const A3& arg3)
+	{
+		T* ptr = (T*)Alloc::allocate(sizeof(T));
+
+		ECLOG_TRY
+		{
+			construct<T>(ptr, arg1, arg2, arg3);
+		}
+			ECLOG_CATCH_ALL
+		{
+			Alloc::deallocate(ptr);
+		ECLOG_RETHROW;
+		}
+
+		return ptr;
+	}
+
+	template<typename T, typename Alloc>
+	inline void destroy(T* ptr)
+	{
+		destruct<T>(ptr);
+		Alloc::deallocate(ptr);
+	}
+
+	template<typename T, typename Alloc>
+	class UniquePtr : private NonCopyable {
+	public:
+		explicit UniquePtr(T* ptr) : ptr_(ptr)
+		{
+		}
+
+		~UniquePtr()
+		{
+			if (ptr_) {
+				destroy<T, Alloc>(ptr_);
+			}
+		}
+
+		T& operator*() const
+		{
+			return *ptr_;
+		}
+
+		T* operator->() const
+		{
+			return ptr_;
+		}
+
+		T* get() const
+		{
+			return ptr_;
+		}
+
+		void reset(T* ptr = 0)
+		{
+			if (ptr_) {
+				destroy<T, Alloc>(ptr_);
 			}
 
-			~UniquePtr()
-			{
-				if (ptr_) {
-					destroy<T, Alloc>(ptr_);
-				}
-			}
+			ptr_ = ptr;
+		}
 
-			T& operator*() const
-			{
-				return *ptr_;
-			}
+		T* release()
+		{
+			T* ptr = ptr_;
+			ptr_ = 0;
+			return ptr;
+		}
 
-			T* operator->() const
-			{
-				return ptr_;
-			}
+	private:
+		T* ptr_;
+	};
 
-			T* get() const
-			{
-				return ptr_;
-			}
-
-			void reset(T* ptr = 0)
-			{
-				if (ptr_) {
-					destroy<T, Alloc>(ptr_);
-				}
-
-				ptr_ = ptr;
-			}
-
-			T* release()
-			{
-				T* ptr = ptr_;
-				ptr_ = 0;
-				return ptr;
-			}
-
-		private:
-			T* ptr_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	template<typename Alloc>
@@ -5668,9 +5735,11 @@ namespace eclog {
 	typedef BasicDynamicParsingBuffer<ECLOG_DEFAULT_ALLOCATOR> DynamicParsingBuffer;
 
 } // eclog
+} // vallest
 
 #include <string.h> // memcpy
 
+namespace vallest {
 namespace eclog {
 
 	class InplaceParsingBuffer : public ParsingBuffer, private detail::NonCopyable {
@@ -5838,9 +5907,11 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <istream>
 
+namespace vallest {
 namespace eclog {
 
 	class StdStreamInputStream : public InputStream, private detail::NonCopyable {
@@ -5873,7 +5944,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	template<typename Alloc>
@@ -5917,9 +5990,11 @@ namespace eclog {
 	typedef BasicMemoryOutputStream<ECLOG_DEFAULT_ALLOCATOR> MemoryOutputStream;
 
 } // eclog
+} // vallest
 
 #include <ostream>
 
+namespace vallest {
 namespace eclog {
 
 	class StdStreamOutputStream : public OutputStream, private detail::NonCopyable {
@@ -5944,9 +6019,11 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <string>
 
+namespace vallest {
 namespace eclog {
 
 	class StdStringOutputStream : public OutputStream, private detail::NonCopyable {
@@ -5977,7 +6054,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	enum NodeType {
@@ -5991,7 +6070,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class Node {
@@ -6003,7 +6084,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class KeyNode : public Node {
@@ -6022,7 +6105,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class NullNode;
@@ -6177,7 +6262,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class ArrayDesc : public ValueDesc {
@@ -6201,12 +6288,14 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #include <stddef.h> // ptrdiff_t, size_t
 #include <istream>
 #include <ostream>
 #include <string>
 
+namespace vallest {
 namespace eclog {
 
 	class ObjectNode : public ValueNode {
@@ -6975,9 +7064,11 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #include <stddef.h> // ptrdiff_t
 
+namespace vallest {
 namespace eclog {
 
 	class ArrayNode : public ValueNode {
@@ -7510,154 +7601,156 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #include <limits.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename Alloc>
+	class DocumentParseHandler : private NonCopyable {
+	public:
+		explicit DocumentParseHandler(ObjectNode& root) : root_(root), hasKey_(false)
+		{
+		}
 
-		template<typename Alloc>
-		class DocumentParseHandler : private NonCopyable {
-		public:
-			explicit DocumentParseHandler(ObjectNode& root) : root_(root), hasKey_(false)
+	public:
+		void onObjectBegin()
+		{
+			if (hasKey_)
 			{
-			}
+				currentObject().appendForce(makeDesc(key_), empty_object);
 
-		public:
-			void onObjectBegin()
+				push(currentObject().last().value());
+
+				hasKey_ = false;
+			}
+			else if (!stack_.empty())
 			{
-				if (hasKey_)
-				{
-					currentObject().appendForce(makeDesc(key_), empty_object);
+				currentArray().append(empty_object);
 
-					push(currentObject().last().value());
-
-					hasKey_ = false;
-				}
-				else if (!stack_.empty())
-				{
-					currentArray().append(empty_object);
-
-					push(currentArray().last().value());
-				}
-				else
-				{
-					push(root_);
-				}
+				push(currentArray().last().value());
 			}
-
-			void onObjectEnd()
+			else
 			{
-				pop();
+				push(root_);
 			}
+		}
 
-			void onArrayBegin()
+		void onObjectEnd()
+		{
+			pop();
+		}
+
+		void onArrayBegin()
+		{
+			if (hasKey_)
 			{
-				if (hasKey_)
-				{
-					currentObject().appendForce(makeDesc(key_), empty_array);
+				currentObject().appendForce(makeDesc(key_), empty_array);
 
-					push(currentObject().last().value());
+				push(currentObject().last().value());
 
-					hasKey_ = false;
-				}
-				else
-				{
-					currentArray().append(empty_array);
-
-					push(currentArray().last().value());
-				}
+				hasKey_ = false;
 			}
-
-			void onArrayEnd()
+			else
 			{
-				pop();
-			}
+				currentArray().append(empty_array);
 
-			void onKey(const Key& key)
+				push(currentArray().last().value());
+			}
+		}
+
+		void onArrayEnd()
+		{
+			pop();
+		}
+
+		void onKey(const Key& key)
+		{
+			key_ = key;
+
+			hasKey_ = true;
+		}
+
+		void onValue(const Value& value)
+		{
+			if (hasKey_)
 			{
-				key_ = key;
+				currentObject().appendForce(makeDesc(key_), makeDesc(value));
 
-				hasKey_ = true;
+				hasKey_ = false;
 			}
-
-			void onValue(const Value& value)
+			else
 			{
-				if (hasKey_)
-				{
-					currentObject().appendForce(makeDesc(key_), makeDesc(value));
-
-					hasKey_ = false;
-				}
-				else
-				{
-					currentArray().append(makeDesc(value));
-				}
+				currentArray().append(makeDesc(value));
 			}
+		}
 
-		private:
-			void push(ValueNode& node)
+	private:
+		void push(ValueNode& node)
+		{
+			stack_.pushBack(&node);
+		}
+
+		void pop()
+		{
+			stack_.popBack();
+		}
+
+		ObjectNode& currentObject()
+		{
+			return *(ObjectNode*)stack_.back();
+		}
+
+		ArrayNode& currentArray()
+		{
+			return *(ArrayNode*)stack_.back();
+		}
+
+	private:
+		static KeyDesc makeDesc(const Key& key)
+		{
+			return KeyDesc(key, key.notation(), key.delimiter());
+		}
+
+		static ValueDesc makeDesc(const Value& value)
+		{
+			switch (value.type())
 			{
-				stack_.pushBack(&node);
+			case value_type_null:
+				return ValueDesc(null);
+
+			case value_type_boolean:
+				return ValueDesc(value.asBoolean());
+
+			case value_type_string:
+				return ValueDesc(value.asString(), value.stringNotation(), value.stringDelimiter());
+
+			case value_type_number:
+				return ValueDesc(value.asNumber());
+
+			default:
+				ECLOG_ASSERT(false);
+				return ValueDesc(null);
 			}
+		}
 
-			void pop()
-			{
-				stack_.popBack();
-			}
+	private:
+		ObjectNode& root_;
 
-			ObjectNode& currentObject()
-			{
-				return *(ObjectNode*)stack_.back();
-			}
+		bool hasKey_;
+		Key key_;
 
-			ArrayNode& currentArray()
-			{
-				return *(ArrayNode*)stack_.back();
-			}
+		PODArray<void*, Alloc> stack_;
+	};
 
-		private:
-			static KeyDesc makeDesc(const Key& key)
-			{
-				return KeyDesc(key, key.notation(), key.delimiter());
-			}
-
-			static ValueDesc makeDesc(const Value& value)
-			{
-				switch (value.type())
-				{
-				case value_type_null:
-					return ValueDesc(null);
-
-				case value_type_boolean:
-					return ValueDesc(value.asBoolean());
-
-				case value_type_string:
-					return ValueDesc(value.asString(), value.stringNotation(), value.stringDelimiter());
-
-				case value_type_number:
-					return ValueDesc(value.asNumber());
-
-				default:
-					ECLOG_ASSERT(false);
-					return ValueDesc(null);
-				}
-			}
-
-		private:
-			ObjectNode& root_;
-
-			bool hasKey_;
-			Key key_;
-
-			PODArray<void*, Alloc> stack_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class NullNode : public ValueNode {
@@ -7672,7 +7765,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class BooleanNode : public ValueNode {
@@ -7687,7 +7782,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class StringNode : public ValueNode {
@@ -7709,7 +7806,9 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
 
 	class NumberNode : public ValueNode {
@@ -7770,197 +7869,198 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class DocumentRenderer : private NonCopyable {
+	public:
+		explicit DocumentRenderer(OutputStream& stream, const RendererConfig& rc = RendererConfig()) : renderer_(stream, rc)
+		{
+		}
 
-		class DocumentRenderer : private NonCopyable {
-		public:
-			explicit DocumentRenderer(OutputStream& stream, const RendererConfig& rc = RendererConfig()) : renderer_(stream, rc)
+		void render(const ObjectNode& root, ErrorCode* ec)
+		{
+			renderer_.beginObject(ec);
+			ECLOG_ON_ERROR(return);
+
+			renderObject(root, ec);
+			ECLOG_ON_ERROR(return);
+
+			renderer_.endObject(ec);
+			ECLOG_ON_ERROR(return);
+
+			renderer_.close(ec);
+			ECLOG_ON_ERROR(return);
+		}
+
+	private:
+		void renderObject(const ObjectNode& node, ErrorCode* ec)
+		{
+			for (ObjectNode::ConstIterator it = node.begin(); it != node.end(); ++it)
 			{
-			}
+				const KeyNode& keyNode = it->key();
+				const ValueNode& valueNode = it->value();
 
-			void render(const ObjectNode& root, ErrorCode* ec)
-			{
-				renderer_.beginObject(ec);
-				ECLOG_ON_ERROR(return);
-
-				renderObject(root, ec);
-				ECLOG_ON_ERROR(return);
-
-				renderer_.endObject(ec);
-				ECLOG_ON_ERROR(return);
-
-				renderer_.close(ec);
-				ECLOG_ON_ERROR(return);
-			}
-
-		private:
-			void renderObject(const ObjectNode& node, ErrorCode* ec)
-			{
-				for (ObjectNode::ConstIterator it = node.begin(); it != node.end(); ++it)
+				if (valueNode.isObject())
 				{
-					const KeyNode& keyNode = it->key();
-					const ValueNode& valueNode = it->value();
+					renderer_.beginObject(makeDesc(keyNode), ec);
+					ECLOG_ON_ERROR(return);
 
-					if (valueNode.isObject())
-					{
-						renderer_.beginObject(makeDesc(keyNode), ec);
-						ECLOG_ON_ERROR(return);
+					renderObject((const ObjectNode&)valueNode, ec);
+					ECLOG_ON_ERROR(return);
 
-						renderObject((const ObjectNode&)valueNode, ec);
-						ECLOG_ON_ERROR(return);
+					renderer_.endObject(ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else if (valueNode.isArray())
+				{
+					renderer_.beginArray(makeDesc(keyNode), ec);
+					ECLOG_ON_ERROR(return);
 
-						renderer_.endObject(ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else if (valueNode.isArray())
-					{
-						renderer_.beginArray(makeDesc(keyNode), ec);
-						ECLOG_ON_ERROR(return);
+					renderArray((const ArrayNode&)valueNode, ec);
+					ECLOG_ON_ERROR(return);
 
-						renderArray((const ArrayNode&)valueNode, ec);
-						ECLOG_ON_ERROR(return);
-
-						renderer_.endArray(ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else
-					{
-						renderer_.renderMember(makeDesc(keyNode), makeDesc(valueNode), ec);
-						ECLOG_ON_ERROR(return);
-					}
+					renderer_.endArray(ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else
+				{
+					renderer_.renderMember(makeDesc(keyNode), makeDesc(valueNode), ec);
+					ECLOG_ON_ERROR(return);
 				}
 			}
+		}
 
-			void renderArray(const ArrayNode& node, ErrorCode* ec)
+		void renderArray(const ArrayNode& node, ErrorCode* ec)
+		{
+			for (ArrayNode::ConstIterator it = node.begin(); it != node.end(); ++it)
 			{
-				for (ArrayNode::ConstIterator it = node.begin(); it != node.end(); ++it)
+				const ValueNode& valueNode = it->value();
+
+				if (valueNode.isObject())
 				{
-					const ValueNode& valueNode = it->value();
+					renderer_.beginObject(ec);
+					ECLOG_ON_ERROR(return);
 
-					if (valueNode.isObject())
-					{
-						renderer_.beginObject(ec);
-						ECLOG_ON_ERROR(return);
+					renderObject((const ObjectNode&)valueNode, ec);
+					ECLOG_ON_ERROR(return);
 
-						renderObject((const ObjectNode&)valueNode, ec);
-						ECLOG_ON_ERROR(return);
+					renderer_.endObject(ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else if (valueNode.isArray())
+				{
+					renderer_.beginArray(ec);
+					ECLOG_ON_ERROR(return);
 
-						renderer_.endObject(ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else if (valueNode.isArray())
-					{
-						renderer_.beginArray(ec);
-						ECLOG_ON_ERROR(return);
+					renderArray((const ArrayNode&)valueNode, ec);
+					ECLOG_ON_ERROR(return);
 
-						renderArray((const ArrayNode&)valueNode, ec);
-						ECLOG_ON_ERROR(return);
-
-						renderer_.endArray(ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else
-					{
-						renderer_.renderMember(makeDesc(valueNode), ec);
-						ECLOG_ON_ERROR(return);
-					}
+					renderer_.endArray(ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else
+				{
+					renderer_.renderMember(makeDesc(valueNode), ec);
+					ECLOG_ON_ERROR(return);
 				}
 			}
+		}
 
-			static KeyDesc makeDesc(const KeyNode& keyNode)
+		static KeyDesc makeDesc(const KeyNode& keyNode)
+		{
+			return KeyDesc(keyNode.str(), keyNode.notation(), keyNode.delimiter());
+		}
+
+		static ValueDesc makeDesc(const ValueNode& valueNode)
+		{
+			switch (valueNode.nodeType())
 			{
-				return KeyDesc(keyNode.str(), keyNode.notation(), keyNode.delimiter());
+			case node_type_null:
+				return ValueDesc(null);
+
+			case node_type_boolean:
+				return ValueDesc(((const BooleanNode&)valueNode).value());
+
+			case node_type_string:
+				return ValueDesc(((const StringNode&)valueNode).value(), ((const StringNode&)valueNode).notation(), ((const StringNode&)valueNode).delimiter());
+
+			case node_type_number:
+				return ValueDesc(((const NumberNode&)valueNode).value(), ((const NumberNode&)valueNode).fracDigits());
+
+			default:
+				ECLOG_ASSERT(false);
+				return ValueDesc(null);
 			}
+		}
 
-			static ValueDesc makeDesc(const ValueNode& valueNode)
-			{
-				switch (valueNode.nodeType())
-				{
-				case node_type_null:
-					return ValueDesc(null);
+	private:
+		Renderer renderer_;
+	};
 
-				case node_type_boolean:
-					return ValueDesc(((const BooleanNode&)valueNode).value());
-
-				case node_type_string:
-					return ValueDesc(((const StringNode&)valueNode).value(), ((const StringNode&)valueNode).notation(), ((const StringNode&)valueNode).delimiter());
-
-				case node_type_number:
-					return ValueDesc(((const NumberNode&)valueNode).value(), ((const NumberNode&)valueNode).fracDigits());
-
-				default:
-					ECLOG_ASSERT(false);
-					return ValueDesc(null);
-				}
-			}
-
-		private:
-			Renderer renderer_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T, typename Factory>
+	class NodePtr : private NonCopyable {
+	public:
+		explicit NodePtr(T* ptr = 0) : ptr_(ptr)
+		{
+		}
 
-		template<typename T, typename Factory>
-		class NodePtr : private NonCopyable {
-		public:
-			explicit NodePtr(T* ptr = 0) : ptr_(ptr)
-			{
+		~NodePtr()
+		{
+			if (ptr_) {
+				Factory::destroy(ptr_);
+			}
+		}
+
+		T& operator*() const
+		{
+			return *ptr_;
+		}
+
+		T* operator->() const
+		{
+			return ptr_;
+		}
+
+		T* get() const
+		{
+			return ptr_;
+		}
+
+		void reset(T* ptr = 0)
+		{
+			if (ptr_) {
+				Factory::destroy(ptr_);
 			}
 
-			~NodePtr()
-			{
-				if (ptr_) {
-					Factory::destroy(ptr_);
-				}
-			}
+			ptr_ = ptr;
+		}
 
-			T& operator*() const
-			{
-				return *ptr_;
-			}
+		T* release()
+		{
+			T* ptr = ptr_;
+			ptr_ = 0;
+			return ptr;
+		}
 
-			T* operator->() const
-			{
-				return ptr_;
-			}
+	private:
+		T* ptr_;
+	};
 
-			T* get() const
-			{
-				return ptr_;
-			}
-
-			void reset(T* ptr = 0)
-			{
-				if (ptr_) {
-					Factory::destroy(ptr_);
-				}
-
-				ptr_ = ptr;
-			}
-
-			T* release()
-			{
-				T* ptr = ptr_;
-				ptr_ = 0;
-				return ptr;
-			}
-
-		private:
-			T* ptr_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 // RbTree (based on the red-black tree implementation of STLport)
 //
@@ -7986,532 +8086,497 @@ namespace eclog {
 // and a notice that the code was modified is included with the above
 // copyright notice.
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename Node, typename Traits, typename Compare>
+	class RbTree : private NonCopyable {
+	private:
+		typedef typename Traits::ColorType ColorType;
 
-		template<typename Node, typename Traits, typename Compare>
-		class RbTree : private NonCopyable {
-		private:
-			typedef typename Traits::ColorType ColorType;
+	public:
+		RbTree() : size_(0)
+		{
+			setColor(&head_, red());
+			setParent(&head_, 0);
+			setLeft(&head_, &head_);
+			setRight(&head_, &head_);
+		}
 
-		public:
-			RbTree() : size_(0)
+		void clear()
+		{
+			if (size_ != 0)
 			{
-				setColor(&head_, red());
 				setParent(&head_, 0);
 				setLeft(&head_, &head_);
 				setRight(&head_, &head_);
+
+				size_ = 0;
+			}
+		}
+
+		bool empty() const
+		{
+			return (size_ == 0);
+		}
+
+		size_t size() const
+		{
+			return size_;
+		}
+
+		Node* begin()
+		{
+			return getLeft(&head_);
+		}
+
+		const Node* begin() const
+		{
+			return getLeft(&head_);
+		}
+
+		Node* end()
+		{
+			return &head_;
+		}
+
+		const Node* end() const
+		{
+			return &head_;
+		}
+
+		template<typename Key>
+		Node* find(const Key& key)
+		{
+			return find<Key, Node*>(key, getParent(&head_), &head_);
+		}
+
+		template<typename Key>
+		const Node* find(const Key& key) const
+		{
+			return find<Key, const Node*>(key, getParent(&head_), &head_);
+		}
+
+		Pair<Node*, bool> insertUnique(Node* node)
+		{
+			setLeft(node, 0);
+			setRight(node, 0);
+
+			Node* p = &head_;
+			Node* p2 = getParent(&head_);
+
+			bool comp = true;
+
+			while (p2 != 0)
+			{
+				p = p2;
+				comp = compare(*node, *p2);
+				p2 = comp ? getLeft(p2) : getRight(p2);
 			}
 
-			void clear()
+			Node* p3 = p;
+
+			if (comp)
 			{
-				if (size_ != 0)
+				if (p3 == getLeft(&head_))
 				{
-					setParent(&head_, 0);
-					setLeft(&head_, &head_);
-					setRight(&head_, &head_);
-
-					size_ = 0;
-				}
-			}
-
-			bool empty() const
-			{
-				return (size_ == 0);
-			}
-
-			size_t size() const
-			{
-				return size_;
-			}
-
-			Node* begin()
-			{
-				return getLeft(&head_);
-			}
-
-			const Node* begin() const
-			{
-				return getLeft(&head_);
-			}
-
-			Node* end()
-			{
-				return &head_;
-			}
-
-			const Node* end() const
-			{
-				return &head_;
-			}
-
-			template<typename Key>
-			Node* find(const Key& key)
-			{
-				return find<Key, Node*>(key, getParent(&head_), &head_);
-			}
-
-			template<typename Key>
-			const Node* find(const Key& key) const
-			{
-				return find<Key, const Node*>(key, getParent(&head_), &head_);
-			}
-
-			Pair<Node*, bool> insertUnique(Node* node)
-			{
-				setLeft(node, 0);
-				setRight(node, 0);
-
-				Node* p = &head_;
-				Node* p2 = getParent(&head_);
-
-				bool comp = true;
-
-				while (p2 != 0)
-				{
-					p = p2;
-					comp = compare(*node, *p2);
-					p2 = comp ? getLeft(p2) : getRight(p2);
-				}
-
-				Node* p3 = p;
-
-				if (comp)
-				{
-					if (p3 == getLeft(&head_))
-					{
-						insert(p, node, p);
-
-						return Pair<Node*, bool>(node, true);
-					}
-					else
-					{
-						p3 = decrement(p3);
-					}
-				}
-
-				if (compare(*p3, *node))
-				{
-					insert(p, node, p2);
+					insert(p, node, p);
 
 					return Pair<Node*, bool>(node, true);
 				}
-
-				return Pair<Node*, bool>(p3, false);
-			}
-
-			void erase(Node* node)
-			{
-				Node* root = getParent(&head_);
-				Node* leftmost = getLeft(&head_);
-				Node* rightmost = getRight(&head_);
-
-				rebalanceForErase(node, root, leftmost, rightmost);
-
-				setParent(&head_, root);
-				setLeft(&head_, leftmost);
-				setRight(&head_, rightmost);
-
-				--size_;
-			}
-
-			void swap(RbTree& other)
-			{
-				if (other.empty())
-				{
-					if (!empty())
-					{
-						Node* root = getParent(&head_);
-						Node* leftmost = getLeft(&head_);
-						Node* rightmost = getRight(&head_);
-
-						setParent(&head_, 0);
-						setLeft(&head_, &head_);
-						setRight(&head_, &head_);
-
-						setParent(&other.head_, root);
-						setLeft(&other.head_, leftmost);
-						setRight(&other.head_, rightmost);
-
-						setParent(root, &other.head_);
-
-						detail::swap(size_, other.size_);
-					}
-				}
-				else if (empty())
-				{
-					other.swap(*this);
-				}
 				else
+				{
+					p3 = decrement(p3);
+				}
+			}
+
+			if (compare(*p3, *node))
+			{
+				insert(p, node, p2);
+
+				return Pair<Node*, bool>(node, true);
+			}
+
+			return Pair<Node*, bool>(p3, false);
+		}
+
+		void erase(Node* node)
+		{
+			Node* root = getParent(&head_);
+			Node* leftmost = getLeft(&head_);
+			Node* rightmost = getRight(&head_);
+
+			rebalanceForErase(node, root, leftmost, rightmost);
+
+			setParent(&head_, root);
+			setLeft(&head_, leftmost);
+			setRight(&head_, rightmost);
+
+			--size_;
+		}
+
+		void swap(RbTree& other)
+		{
+			if (other.empty())
+			{
+				if (!empty())
 				{
 					Node* root = getParent(&head_);
 					Node* leftmost = getLeft(&head_);
 					Node* rightmost = getRight(&head_);
 
-					setParent(&head_, getParent(&other.head_));
-					setLeft(&head_, getLeft(&other.head_));
-					setRight(&head_, getRight(&other.head_));
-					setParent(getParent(&head_), &head_);
+					setParent(&head_, 0);
+					setLeft(&head_, &head_);
+					setRight(&head_, &head_);
 
 					setParent(&other.head_, root);
 					setLeft(&other.head_, leftmost);
 					setRight(&other.head_, rightmost);
-					setParent(getParent(&other.head_), &other.head_);
+
+					setParent(root, &other.head_);
 
 					detail::swap(size_, other.size_);
 				}
 			}
-
-			bool verify() const
+			else if (empty())
+			{
+				other.swap(*this);
+			}
+			else
 			{
 				Node* root = getParent(&head_);
 				Node* leftmost = getLeft(&head_);
 				Node* rightmost = getRight(&head_);
 
-				if (size() == 0 || begin() == end())
+				setParent(&head_, getParent(&other.head_));
+				setLeft(&head_, getLeft(&other.head_));
+				setRight(&head_, getRight(&other.head_));
+				setParent(getParent(&head_), &head_);
+
+				setParent(&other.head_, root);
+				setLeft(&other.head_, leftmost);
+				setRight(&other.head_, rightmost);
+				setParent(getParent(&other.head_), &other.head_);
+
+				detail::swap(size_, other.size_);
+			}
+		}
+
+		bool verify() const
+		{
+			Node* root = getParent(&head_);
+			Node* leftmost = getLeft(&head_);
+			Node* rightmost = getRight(&head_);
+
+			if (size() == 0 || begin() == end())
+			{
+				return ((size() == 0) && (begin() == end()) && (leftmost == &head_) && (rightmost == &head_));
+			}
+
+			int len = blackCount(leftmost, root);
+
+			for (const Node* p = begin(); p != end(); p = increment(p))
+			{
+				const Node* left = getLeft(p);
+				const Node* right = getRight(p);
+
+				if (getColor(p) == red())
 				{
-					return ((size() == 0) && (begin() == end()) && (leftmost == &head_) && (rightmost == &head_));
+					if ((left && getColor(left) == red()) || (right && getColor(right) == red())) {
+						return false;
+					}
 				}
 
-				int len = blackCount(leftmost, root);
-
-				for (const Node* p = begin(); p != end(); p = increment(p))
-				{
-					const Node* left = getLeft(p);
-					const Node* right = getRight(p);
-
-					if (getColor(p) == red())
-					{
-						if ((left && getColor(left) == red()) || (right && getColor(right) == red())) {
-							return false;
-						}
-					}
-
-					if (left && compare(*p, *left)) {
-						return false;
-					}
-
-					if (right && compare(*right, *p)) {
-						return false;
-					}
-
-					if (!left && !right && blackCount(p, root) != len) {
-						return false;
-					}
-				}
-
-				if (leftmost != minimum(root)) {
+				if (left && compare(*p, *left)) {
 					return false;
 				}
 
-				if (rightmost != maximum(root)) {
+				if (right && compare(*right, *p)) {
 					return false;
 				}
 
-				return true;
+				if (!left && !right && blackCount(p, root) != len) {
+					return false;
+				}
 			}
 
-		public:
-			template<typename NodePtr>
-			static NodePtr increment(NodePtr node)
-			{
-				if (getRight(node) != 0)
-				{
-					node = minimum(getRight(node));
-				}
-				else
-				{
-					Node* p = getParent(node);
-
-					while (node == getRight(p))
-					{
-						node = p;
-						p = getParent(p);
-					}
-
-					if (getRight(node) != p) {
-						node = p;
-					}
-				}
-
-				return node;
+			if (leftmost != minimum(root)) {
+				return false;
 			}
 
-			template<typename NodePtr>
-			static NodePtr decrement(NodePtr node)
+			if (rightmost != maximum(root)) {
+				return false;
+			}
+
+			return true;
+		}
+
+	public:
+		template<typename NodePtr>
+		static NodePtr increment(NodePtr node)
+		{
+			if (getRight(node) != 0)
 			{
-				if (getColor(node) == red() && getParent(getParent(node)) == node)
-				{
-					node = getRight(node);
-				}
-				else if (getLeft(node) != 0)
-				{
-					node = maximum(getLeft(node));
-				}
-				else
-				{
-					NodePtr p = getParent(node);
+				node = minimum(getRight(node));
+			}
+			else
+			{
+				Node* p = getParent(node);
 
-					while (node == getLeft(p))
-					{
-						node = p;
-						p = getParent(p);
-					}
+				while (node == getRight(p))
+				{
+					node = p;
+					p = getParent(p);
+				}
 
+				if (getRight(node) != p) {
 					node = p;
 				}
-
-				return node;
 			}
 
-		private:
-			static Node* getParent(const Node* node)
+			return node;
+		}
+
+		template<typename NodePtr>
+		static NodePtr decrement(NodePtr node)
+		{
+			if (getColor(node) == red() && getParent(getParent(node)) == node)
 			{
-				return Traits::getParent(node);
+				node = getRight(node);
 			}
-
-			static void setParent(Node* node, Node* parent)
+			else if (getLeft(node) != 0)
 			{
-				Traits::setParent(node, parent);
+				node = maximum(getLeft(node));
 			}
-
-			static Node* getLeft(const Node* node)
+			else
 			{
-				return Traits::getLeft(node);
-			}
+				NodePtr p = getParent(node);
 
-			static void setLeft(Node* node, Node* left)
-			{
-				Traits::setLeft(node, left);
-			}
-
-			static Node* getRight(const Node* node)
-			{
-				return Traits::getRight(node);
-			}
-
-			static void setRight(Node* node, Node* right)
-			{
-				Traits::setRight(node, right);
-			}
-
-			static ColorType getColor(const Node* node)
-			{
-				return Traits::getColor(node);
-			}
-
-			static void setColor(Node* node, ColorType color)
-			{
-				Traits::setColor(node, color);
-			}
-
-			static ColorType red()
-			{
-				return Traits::red();
-			}
-
-			static ColorType black()
-			{
-				return Traits::black();
-			}
-
-			template<typename T1, typename T2>
-			static bool compare(const T1& a, const T2& b)
-			{
-				return Compare()(a, b);
-			}
-
-			static Node* minimum(Node* node)
-			{
-				while (getLeft(node) != 0) {
-					node = getLeft(node);
-				}
-
-				return node;
-			}
-
-			static Node* maximum(Node* node)
-			{
-				while (getRight(node) != 0) {
-					node = getRight(node);
-				}
-
-				return node;
-			}
-
-			static void rotateLeft(Node* node, Node*& root)
-			{
-				Node* p = getRight(node);
-
-				setRight(node, getLeft(p));
-
-				if (getLeft(p) != 0) {
-					setParent(getLeft(p), node);
-				}
-
-				setParent(p, getParent(node));
-
-				if (node == root) {
-					root = p;
-				}
-				else if (node == getLeft(getParent(node))) {
-					setLeft(getParent(node), p);
-				}
-				else {
-					setRight(getParent(node), p);
-				}
-
-				setLeft(p, node);
-				setParent(node, p);
-			}
-
-			static void rotateRight(Node* node, Node*& root)
-			{
-				Node* p = getLeft(node);
-
-				setLeft(node, getRight(p));
-
-				if (getRight(p) != 0) {
-					setParent(getRight(p), node);
-				}
-
-				setParent(p, getParent(node));
-
-				if (node == root) {
-					root = p;
-				}
-				else if (node == getRight(getParent(node))) {
-					setRight(getParent(node), p);
-				}
-				else {
-					setLeft(getParent(node), p);
-				}
-
-				setRight(p, node);
-				setParent(node, p);
-			}
-
-			static void rebalance(Node* node, Node*& root)
-			{
-				setColor(node, red());
-
-				while (node != root && getColor(getParent(node)) == red())
+				while (node == getLeft(p))
 				{
-					if (getParent(node) == getLeft(getParent(getParent(node))))
+					node = p;
+					p = getParent(p);
+				}
+
+				node = p;
+			}
+
+			return node;
+		}
+
+	private:
+		static Node* getParent(const Node* node)
+		{
+			return Traits::getParent(node);
+		}
+
+		static void setParent(Node* node, Node* parent)
+		{
+			Traits::setParent(node, parent);
+		}
+
+		static Node* getLeft(const Node* node)
+		{
+			return Traits::getLeft(node);
+		}
+
+		static void setLeft(Node* node, Node* left)
+		{
+			Traits::setLeft(node, left);
+		}
+
+		static Node* getRight(const Node* node)
+		{
+			return Traits::getRight(node);
+		}
+
+		static void setRight(Node* node, Node* right)
+		{
+			Traits::setRight(node, right);
+		}
+
+		static ColorType getColor(const Node* node)
+		{
+			return Traits::getColor(node);
+		}
+
+		static void setColor(Node* node, ColorType color)
+		{
+			Traits::setColor(node, color);
+		}
+
+		static ColorType red()
+		{
+			return Traits::red();
+		}
+
+		static ColorType black()
+		{
+			return Traits::black();
+		}
+
+		template<typename T1, typename T2>
+		static bool compare(const T1& a, const T2& b)
+		{
+			return Compare()(a, b);
+		}
+
+		static Node* minimum(Node* node)
+		{
+			while (getLeft(node) != 0) {
+				node = getLeft(node);
+			}
+
+			return node;
+		}
+
+		static Node* maximum(Node* node)
+		{
+			while (getRight(node) != 0) {
+				node = getRight(node);
+			}
+
+			return node;
+		}
+
+		static void rotateLeft(Node* node, Node*& root)
+		{
+			Node* p = getRight(node);
+
+			setRight(node, getLeft(p));
+
+			if (getLeft(p) != 0) {
+				setParent(getLeft(p), node);
+			}
+
+			setParent(p, getParent(node));
+
+			if (node == root) {
+				root = p;
+			}
+			else if (node == getLeft(getParent(node))) {
+				setLeft(getParent(node), p);
+			}
+			else {
+				setRight(getParent(node), p);
+			}
+
+			setLeft(p, node);
+			setParent(node, p);
+		}
+
+		static void rotateRight(Node* node, Node*& root)
+		{
+			Node* p = getLeft(node);
+
+			setLeft(node, getRight(p));
+
+			if (getRight(p) != 0) {
+				setParent(getRight(p), node);
+			}
+
+			setParent(p, getParent(node));
+
+			if (node == root) {
+				root = p;
+			}
+			else if (node == getRight(getParent(node))) {
+				setRight(getParent(node), p);
+			}
+			else {
+				setLeft(getParent(node), p);
+			}
+
+			setRight(p, node);
+			setParent(node, p);
+		}
+
+		static void rebalance(Node* node, Node*& root)
+		{
+			setColor(node, red());
+
+			while (node != root && getColor(getParent(node)) == red())
+			{
+				if (getParent(node) == getLeft(getParent(getParent(node))))
+				{
+					Node* p = getRight(getParent(getParent(node)));
+
+					if (p && getColor(p) == red())
 					{
-						Node* p = getRight(getParent(getParent(node)));
-
-						if (p && getColor(p) == red())
-						{
-							setColor(getParent(node), black());
-							setColor(p, black());
-							setColor(getParent(getParent(node)), red());
-							node = getParent(getParent(node));
-						}
-						else
-						{
-							if (node == getRight(getParent(node)))
-							{
-								node = getParent(node);
-								rotateLeft(node, root);
-							}
-
-							setColor(getParent(node), black());
-							setColor(getParent(getParent(node)), red());
-							rotateRight(getParent(getParent(node)), root);
-						}
+						setColor(getParent(node), black());
+						setColor(p, black());
+						setColor(getParent(getParent(node)), red());
+						node = getParent(getParent(node));
 					}
 					else
 					{
-						Node* p = getLeft(getParent(getParent(node)));
-
-						if (p && getColor(p) == red())
+						if (node == getRight(getParent(node)))
 						{
-							setColor(getParent(node), black());
-							setColor(p, black());
-							setColor(getParent(getParent(node)), red());
-							node = getParent(getParent(node));
+							node = getParent(node);
+							rotateLeft(node, root);
 						}
-						else
-						{
-							if (node == getLeft(getParent(node)))
-							{
-								node = getParent(node);
-								rotateRight(node, root);
-							}
 
-							setColor(getParent(node), black());
-							setColor(getParent(getParent(node)), red());
-							rotateLeft(getParent(getParent(node)), root);
-						}
+						setColor(getParent(node), black());
+						setColor(getParent(getParent(node)), red());
+						rotateRight(getParent(getParent(node)), root);
 					}
-				}
-
-				setColor(root, black());
-			}
-
-			static Node* rebalanceForErase(Node* node, Node*& root, Node*& leftmost, Node*& rightmost)
-			{
-				Node* p = node;
-				Node* p2;
-				Node* p3;
-
-				if (getLeft(p) == 0)
-				{
-					p2 = getRight(p);
-				}
-				else if (getRight(p) == 0)
-				{
-					p2 = getLeft(p);
 				}
 				else
 				{
-					p = minimum(getRight(p));
-					p2 = getRight(p);
-				}
+					Node* p = getLeft(getParent(getParent(node)));
 
-				if (p != node)
-				{
-					setParent(getLeft(node), p);
-					setLeft(p, getLeft(node));
-
-					if (p != getRight(node))
+					if (p && getColor(p) == red())
 					{
-						p3 = getParent(p);
-
-						if (p2) {
-							setParent(p2, getParent(p));
-						}
-
-						setLeft(getParent(p), p2);
-						setRight(p, getRight(node));
-						setParent(getRight(node), p);
+						setColor(getParent(node), black());
+						setColor(p, black());
+						setColor(getParent(getParent(node)), red());
+						node = getParent(getParent(node));
 					}
 					else
 					{
-						p3 = p;
-					}
+						if (node == getLeft(getParent(node)))
+						{
+							node = getParent(node);
+							rotateRight(node, root);
+						}
 
-					if (root == node) {
-						root = p;
+						setColor(getParent(node), black());
+						setColor(getParent(getParent(node)), red());
+						rotateLeft(getParent(getParent(node)), root);
 					}
-					else if (getLeft(getParent(node)) == node) {
-						setLeft(getParent(node), p);
-					}
-					else {
-						setRight(getParent(node), p);
-					}
-
-					setParent(p, getParent(node));
-
-					ColorType t = getColor(p);
-					setColor(p, getColor(node));
-					setColor(node, t);
-
-					p = node;
 				}
-				else
+			}
+
+			setColor(root, black());
+		}
+
+		static Node* rebalanceForErase(Node* node, Node*& root, Node*& leftmost, Node*& rightmost)
+		{
+			Node* p = node;
+			Node* p2;
+			Node* p3;
+
+			if (getLeft(p) == 0)
+			{
+				p2 = getRight(p);
+			}
+			else if (getRight(p) == 0)
+			{
+				p2 = getLeft(p);
+			}
+			else
+			{
+				p = minimum(getRight(p));
+				p2 = getRight(p);
+			}
+
+			if (p != node)
+			{
+				setParent(getLeft(node), p);
+				setLeft(p, getLeft(node));
+
+				if (p != getRight(node))
 				{
 					p3 = getParent(p);
 
@@ -8519,393 +8584,406 @@ namespace eclog {
 						setParent(p2, getParent(p));
 					}
 
-					if (root == node) {
-						root = p2;
-					}
-					else if (getLeft(getParent(node)) == node) {
-						setLeft(getParent(node), p2);
+					setLeft(getParent(p), p2);
+					setRight(p, getRight(node));
+					setParent(getRight(node), p);
+				}
+				else
+				{
+					p3 = p;
+				}
+
+				if (root == node) {
+					root = p;
+				}
+				else if (getLeft(getParent(node)) == node) {
+					setLeft(getParent(node), p);
+				}
+				else {
+					setRight(getParent(node), p);
+				}
+
+				setParent(p, getParent(node));
+
+				ColorType t = getColor(p);
+				setColor(p, getColor(node));
+				setColor(node, t);
+
+				p = node;
+			}
+			else
+			{
+				p3 = getParent(p);
+
+				if (p2) {
+					setParent(p2, getParent(p));
+				}
+
+				if (root == node) {
+					root = p2;
+				}
+				else if (getLeft(getParent(node)) == node) {
+					setLeft(getParent(node), p2);
+				}
+				else {
+					setRight(getParent(node), p2);
+				}
+
+				if (leftmost == node)
+				{
+					if (getRight(node) == 0) {
+						leftmost = getParent(node);
 					}
 					else {
-						setRight(getParent(node), p2);
-					}
-
-					if (leftmost == node)
-					{
-						if (getRight(node) == 0) {
-							leftmost = getParent(node);
-						}
-						else {
-							leftmost = minimum(p2);
-						}
-					}
-
-					if (rightmost == node)
-					{
-						if (getLeft(node) == 0) {
-							rightmost = getParent(node);
-						}
-						else {
-							rightmost = maximum(p2);
-						}
+						leftmost = minimum(p2);
 					}
 				}
 
-				if (getColor(p) != red())
+				if (rightmost == node)
 				{
-					while (p2 != root && (p2 == 0 || getColor(p2) == black()))
+					if (getLeft(node) == 0) {
+						rightmost = getParent(node);
+					}
+					else {
+						rightmost = maximum(p2);
+					}
+				}
+			}
+
+			if (getColor(p) != red())
+			{
+				while (p2 != root && (p2 == 0 || getColor(p2) == black()))
+				{
+					if (p2 == getLeft(p3))
 					{
-						if (p2 == getLeft(p3))
+						Node* p4 = getRight(p3);
+
+						if (getColor(p4) == red())
 						{
-							Node* p4 = getRight(p3);
+							setColor(p4, black());
+							setColor(p3, red());
+							rotateLeft(p3, root);
+							p4 = getRight(p3);
+						}
 
-							if (getColor(p4) == red())
-							{
-								setColor(p4, black());
-								setColor(p3, red());
-								rotateLeft(p3, root);
-								p4 = getRight(p3);
-							}
-
-							if ((getLeft(p4) == 0 || getColor(getLeft(p4)) == black()) && (getRight(p4) == 0 || getColor(getRight(p4)) == black()))
-							{
-								setColor(p4, red());
-								p2 = p3;
-								p3 = getParent(p3);
-							}
-							else
-							{
-								if (getRight(p4) == 0 || getColor(getRight(p4)) == black())
-								{
-									if (getLeft(p4)) {
-										setColor(getLeft(p4), black());
-									}
-
-									setColor(p4, red());
-									rotateRight(p4, root);
-									p4 = getRight(p3);
-								}
-
-								setColor(p4, getColor(p3));
-								setColor(p3, black());
-
-								if (getRight(p4)) {
-									setColor(getRight(p4), black());
-								}
-
-								rotateLeft(p3, root);
-								break;
-							}
+						if ((getLeft(p4) == 0 || getColor(getLeft(p4)) == black()) && (getRight(p4) == 0 || getColor(getRight(p4)) == black()))
+						{
+							setColor(p4, red());
+							p2 = p3;
+							p3 = getParent(p3);
 						}
 						else
 						{
-							Node* p4 = getLeft(p3);
-
-							if (getColor(p4) == red())
+							if (getRight(p4) == 0 || getColor(getRight(p4)) == black())
 							{
-								setColor(p4, black());
-								setColor(p3, red());
-								rotateRight(p3, root);
-								p4 = getLeft(p3);
-							}
-
-							if ((getRight(p4) == 0 || getColor(getRight(p4)) == black()) && (getLeft(p4) == 0 || getColor(getLeft(p4)) == black()))
-							{
-								setColor(p4, red());
-								p2 = p3;
-								p3 = getParent(p3);
-							}
-							else
-							{
-								if (getLeft(p4) == 0 || getColor(getLeft(p4)) == black())
-								{
-									if (getRight(p4)) {
-										setColor(getRight(p4), black());
-									}
-
-									setColor(p4, red());
-									rotateLeft(p4, root);
-									p4 = getLeft(p3);
-								}
-
-								setColor(p4, getColor(p3));
-								setColor(p3, black());
-
 								if (getLeft(p4)) {
 									setColor(getLeft(p4), black());
 								}
 
-								rotateRight(p3, root);
-								break;
+								setColor(p4, red());
+								rotateRight(p4, root);
+								p4 = getRight(p3);
 							}
+
+							setColor(p4, getColor(p3));
+							setColor(p3, black());
+
+							if (getRight(p4)) {
+								setColor(getRight(p4), black());
+							}
+
+							rotateLeft(p3, root);
+							break;
 						}
-					}
-
-					if (p2) {
-						setColor(p2, black());
-					}
-				}
-
-				return p;
-			}
-
-			template<typename Key, typename NodePtr>
-			static NodePtr find(const Key& key, NodePtr root, NodePtr end)
-			{
-				NodePtr p = end;
-				NodePtr p2 = root;
-
-				while (p2 != 0)
-				{
-					if (!compare(*p2, key))
-					{
-						p = p2;
-						p2 = getLeft(p2);
 					}
 					else
 					{
-						p2 = getRight(p2);
+						Node* p4 = getLeft(p3);
+
+						if (getColor(p4) == red())
+						{
+							setColor(p4, black());
+							setColor(p3, red());
+							rotateRight(p3, root);
+							p4 = getLeft(p3);
+						}
+
+						if ((getRight(p4) == 0 || getColor(getRight(p4)) == black()) && (getLeft(p4) == 0 || getColor(getLeft(p4)) == black()))
+						{
+							setColor(p4, red());
+							p2 = p3;
+							p3 = getParent(p3);
+						}
+						else
+						{
+							if (getLeft(p4) == 0 || getColor(getLeft(p4)) == black())
+							{
+								if (getRight(p4)) {
+									setColor(getRight(p4), black());
+								}
+
+								setColor(p4, red());
+								rotateLeft(p4, root);
+								p4 = getLeft(p3);
+							}
+
+							setColor(p4, getColor(p3));
+							setColor(p3, black());
+
+							if (getLeft(p4)) {
+								setColor(getLeft(p4), black());
+							}
+
+							rotateRight(p3, root);
+							break;
+						}
 					}
 				}
 
-				if (p != end)
-				{
-					if (compare(key, *p)) {
-						p = end;
-					}
+				if (p2) {
+					setColor(p2, black());
 				}
-
-				return p;
 			}
 
-			Node* insert(Node* parent, Node* node, Node* onLeft = 0, Node* onRight = 0)
-			{
-				if (parent == &head_)
-				{
-					setLeft(parent, node);
-					setParent(&head_, node);
-					setRight(&head_, node);
-				}
-				else if (onRight == 0 && (onLeft != 0 || compare(*node, *parent)))
-				{
-					setLeft(parent, node);
+			return p;
+		}
 
-					if (parent == getLeft(&head_)) {
-						setLeft(&head_, node);
-					}
+		template<typename Key, typename NodePtr>
+		static NodePtr find(const Key& key, NodePtr root, NodePtr end)
+		{
+			NodePtr p = end;
+			NodePtr p2 = root;
+
+			while (p2 != 0)
+			{
+				if (!compare(*p2, key))
+				{
+					p = p2;
+					p2 = getLeft(p2);
 				}
 				else
 				{
-					setRight(parent, node);
-
-					if (parent == getRight(&head_)) {
-						setRight(&head_, node);
-					}
+					p2 = getRight(p2);
 				}
-
-				setParent(node, parent);
-
-				Node* root = getParent(&head_);
-
-				rebalance(node, root);
-
-				setParent(&head_, root);
-
-				++size_;
-
-				return node;
 			}
 
-			int blackCount(const Node* node, const Node* root) const
+			if (p != end)
 			{
-				if (node == 0) {
-					return 0;
-				}
-
-				int count = getColor(node) == black() ? 1 : 0;
-
-				if (node == root) {
-					return count;
-				}
-				else {
-					return count + blackCount(getParent(node), root);
+				if (compare(key, *p)) {
+					p = end;
 				}
 			}
 
-		private:
-			Node head_;
-			size_t size_;
-		};
-
-		template<typename Node, typename Traits, typename Compare>
-		inline void swap(RbTree<Node, Traits, Compare>& a, RbTree<Node, Traits, Compare>& b)
-		{
-			a.swap(b);
+			return p;
 		}
 
-	} // detail
+		Node* insert(Node* parent, Node* node, Node* onLeft = 0, Node* onRight = 0)
+		{
+			if (parent == &head_)
+			{
+				setLeft(parent, node);
+				setParent(&head_, node);
+				setRight(&head_, node);
+			}
+			else if (onRight == 0 && (onLeft != 0 || compare(*node, *parent)))
+			{
+				setLeft(parent, node);
 
+				if (parent == getLeft(&head_)) {
+					setLeft(&head_, node);
+				}
+			}
+			else
+			{
+				setRight(parent, node);
+
+				if (parent == getRight(&head_)) {
+					setRight(&head_, node);
+				}
+			}
+
+			setParent(node, parent);
+
+			Node* root = getParent(&head_);
+
+			rebalance(node, root);
+
+			setParent(&head_, root);
+
+			++size_;
+
+			return node;
+		}
+
+		int blackCount(const Node* node, const Node* root) const
+		{
+			if (node == 0) {
+				return 0;
+			}
+
+			int count = getColor(node) == black() ? 1 : 0;
+
+			if (node == root) {
+				return count;
+			}
+			else {
+				return count + blackCount(getParent(node), root);
+			}
+		}
+
+	private:
+		Node head_;
+		size_t size_;
+	};
+
+	template<typename Node, typename Traits, typename Compare>
+	inline void swap(RbTree<Node, Traits, Compare>& a, RbTree<Node, Traits, Compare>& b)
+	{
+		a.swap(b);
+	}
+
+} // detail
 } // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename Node, typename Traits>
+	class LinkedList : private NonCopyable {
+	public:
+		LinkedList() : size_(0)
+		{
+			setPrev(&head_, &head_);
+			setNext(&head_, &head_);
+		}
 
-		template<typename Node, typename Traits>
-		class LinkedList : private NonCopyable {
-		public:
-			LinkedList() : size_(0)
+		void clear()
+		{
+			if (size_ != 0)
 			{
 				setPrev(&head_, &head_);
 				setNext(&head_, &head_);
+
+				size_ = 0;
 			}
+		}
 
-			void clear()
+		bool empty() const
+		{
+			return (size_ == 0);
+		}
+
+		size_t size() const
+		{
+			return size_;
+		}
+
+		Node* begin()
+		{
+			return getNext(&head_);
+		}
+
+		const Node* begin() const
+		{
+			return getNext(&head_);
+		}
+
+		Node* end()
+		{
+			return &head_;
+		}
+
+		const Node* end() const
+		{
+			return &head_;
+		}
+
+		Node* front()
+		{
+			return getNext(&head_);
+		}
+
+		const Node* front() const
+		{
+			return getNext(&head_);
+		}
+
+		Node* back()
+		{
+			return getPrev(&head_);
+		}
+
+		const Node* back() const
+		{
+			return getPrev(&head_);
+		}
+
+		void pushBack(Node* node)
+		{
+			insertBefore(node, end());
+		}
+
+		void popBack()
+		{
+			erase(back());
+		}
+
+		void pushFront(Node* node)
+		{
+			insertBefore(node, begin());
+		}
+
+		void popFront()
+		{
+			erase(front());
+		}
+
+		void insertBefore(Node* node, Node* refNode)
+		{
+			setPrev(node, getPrev(refNode));
+			setNext(node, refNode);
+			setNext(getPrev(refNode), node);
+			setPrev(refNode, node);
+
+			++size_;
+		}
+
+		void insertAfter(Node* node, Node* refNode)
+		{
+			insertBefore(node, getNext(refNode));
+		}
+
+		void replace(Node* node, Node* oldNode)
+		{
+			setNext(node, getNext(oldNode));
+			setPrev(node, getPrev(oldNode));
+			setNext(getPrev(node), node);
+			setPrev(getNext(node), node);
+		}
+
+		void erase(Node* node)
+		{
+			setNext(getPrev(node), getNext(node));
+			setPrev(getNext(node), getPrev(node));
+
+			--size_;
+		}
+
+		void swap(LinkedList& other)
+		{
+			if (other.empty())
 			{
-				if (size_ != 0)
-				{
-					setPrev(&head_, &head_);
-					setNext(&head_, &head_);
-
-					size_ = 0;
-				}
-			}
-
-			bool empty() const
-			{
-				return (size_ == 0);
-			}
-
-			size_t size() const
-			{
-				return size_;
-			}
-
-			Node* begin()
-			{
-				return getNext(&head_);
-			}
-
-			const Node* begin() const
-			{
-				return getNext(&head_);
-			}
-
-			Node* end()
-			{
-				return &head_;
-			}
-
-			const Node* end() const
-			{
-				return &head_;
-			}
-
-			Node* front()
-			{
-				return getNext(&head_);
-			}
-
-			const Node* front() const
-			{
-				return getNext(&head_);
-			}
-
-			Node* back()
-			{
-				return getPrev(&head_);
-			}
-
-			const Node* back() const
-			{
-				return getPrev(&head_);
-			}
-
-			void pushBack(Node* node)
-			{
-				insertBefore(node, end());
-			}
-
-			void popBack()
-			{
-				erase(back());
-			}
-
-			void pushFront(Node* node)
-			{
-				insertBefore(node, begin());
-			}
-
-			void popFront()
-			{
-				erase(front());
-			}
-
-			void insertBefore(Node* node, Node* refNode)
-			{
-				setPrev(node, getPrev(refNode));
-				setNext(node, refNode);
-				setNext(getPrev(refNode), node);
-				setPrev(refNode, node);
-
-				++size_;
-			}
-
-			void insertAfter(Node* node, Node* refNode)
-			{
-				insertBefore(node, getNext(refNode));
-			}
-
-			void replace(Node* node, Node* oldNode)
-			{
-				setNext(node, getNext(oldNode));
-				setPrev(node, getPrev(oldNode));
-				setNext(getPrev(node), node);
-				setPrev(getNext(node), node);
-			}
-
-			void erase(Node* node)
-			{
-				setNext(getPrev(node), getNext(node));
-				setPrev(getNext(node), getPrev(node));
-
-				--size_;
-			}
-
-			void swap(LinkedList& other)
-			{
-				if (other.empty())
-				{
-					if (!empty())
-					{
-						Node* next = getNext(&head_);
-						Node* prev = getPrev(&head_);
-
-						setPrev(&head_, &head_);
-						setNext(&head_, &head_);
-
-						setNext(&other.head_, next);
-						setPrev(&other.head_, prev);
-						setPrev(getNext(&other.head_), &other.head_);
-						setNext(getPrev(&other.head_), &other.head_);
-
-						detail::swap(size_, other.size_);
-					}
-				}
-				else if (empty())
-				{
-					other.swap(*this);
-				}
-				else
+				if (!empty())
 				{
 					Node* next = getNext(&head_);
 					Node* prev = getPrev(&head_);
 
-					setNext(&head_, getNext(&other.head_));
-					setPrev(&head_, getPrev(&other.head_));
-					setPrev(getNext(&head_), &head_);
-					setNext(getPrev(&head_), &head_);
+					setPrev(&head_, &head_);
+					setNext(&head_, &head_);
 
 					setNext(&other.head_, next);
 					setPrev(&other.head_, prev);
@@ -8915,1885 +8993,1908 @@ namespace eclog {
 					detail::swap(size_, other.size_);
 				}
 			}
-
-		public:
-			template<typename NodePtr>
-			static NodePtr increment(NodePtr node)
+			else if (empty())
 			{
-				return getNext(node);
+				other.swap(*this);
 			}
-
-			template<typename NodePtr>
-			static NodePtr decrement(NodePtr node)
+			else
 			{
-				return getPrev(node);
+				Node* next = getNext(&head_);
+				Node* prev = getPrev(&head_);
+
+				setNext(&head_, getNext(&other.head_));
+				setPrev(&head_, getPrev(&other.head_));
+				setPrev(getNext(&head_), &head_);
+				setNext(getPrev(&head_), &head_);
+
+				setNext(&other.head_, next);
+				setPrev(&other.head_, prev);
+				setPrev(getNext(&other.head_), &other.head_);
+				setNext(getPrev(&other.head_), &other.head_);
+
+				detail::swap(size_, other.size_);
 			}
-
-		private:
-			static Node* getPrev(const Node* node)
-			{
-				return Traits::getPrev(node);
-			}
-
-			static void setPrev(Node* node, Node* prev)
-			{
-				Traits::setPrev(node, prev);
-			}
-
-			static Node* getNext(const Node* node)
-			{
-				return Traits::getNext(node);
-			}
-
-			static void setNext(Node* node, Node* next)
-			{
-				Traits::setNext(node, next);
-			}
-
-		private:
-			Node head_;
-			size_t size_;
-		};
-
-		template<typename Node, typename Traits>
-		inline void swap(LinkedList<Node, Traits>& a, LinkedList<Node, Traits>& b)
-		{
-			a.swap(b);
 		}
 
-	} // detail
+	public:
+		template<typename NodePtr>
+		static NodePtr increment(NodePtr node)
+		{
+			return getNext(node);
+		}
 
+		template<typename NodePtr>
+		static NodePtr decrement(NodePtr node)
+		{
+			return getPrev(node);
+		}
+
+	private:
+		static Node* getPrev(const Node* node)
+		{
+			return Traits::getPrev(node);
+		}
+
+		static void setPrev(Node* node, Node* prev)
+		{
+			Traits::setPrev(node, prev);
+		}
+
+		static Node* getNext(const Node* node)
+		{
+			return Traits::getNext(node);
+		}
+
+		static void setNext(Node* node, Node* next)
+		{
+			Traits::setNext(node, next);
+		}
+
+	private:
+		Node head_;
+		size_t size_;
+	};
+
+	template<typename Node, typename Traits>
+	inline void swap(LinkedList<Node, Traits>& a, LinkedList<Node, Traits>& b)
+	{
+		a.swap(b);
+	}
+
+} // detail
 } // eclog
+} // vallest
 
 #include <stddef.h> // ptrdiff_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename Factory>
+	class ObjectNodeImpl : public ObjectNode, private NonCopyable {
+	private:
+		struct RbTreeNode
+		{
+			int color;
+			RbTreeNode* parent;
+			RbTreeNode* left;
+			RbTreeNode* right;
+		};
 
-		template<typename Factory>
-		class ObjectNodeImpl : public ObjectNode, private NonCopyable {
-		private:
-			struct RbTreeNode
-			{
-				int color;
-				RbTreeNode* parent;
-				RbTreeNode* left;
-				RbTreeNode* right;
-			};
-
-			class LinkedListNode : public ObjectNode::Element {
-			public:
-				virtual KeyNode& key() ECLOG_OVERRIDE
-				{
-					ECLOG_FAULT(OutOfRange);
-				}
-
-				virtual const KeyNode& key() const ECLOG_OVERRIDE
-				{
-					ECLOG_FAULT(OutOfRange);
-				}
-
-				virtual ValueNode& value() ECLOG_OVERRIDE
-				{
-					ECLOG_FAULT(OutOfRange);
-				}
-
-				virtual const ValueNode& value() const ECLOG_OVERRIDE
-				{
-					ECLOG_FAULT(OutOfRange);
-				}
-
-				virtual void updateValue(const ValueNode&) ECLOG_OVERRIDE
-				{
-					ECLOG_FAULT(OutOfRange);
-				}
-
-				virtual void updateValue(const eclog::ValueDesc&) ECLOG_OVERRIDE
-				{
-					ECLOG_FAULT(OutOfRange);
-				}
-
-				virtual LinkedListNode* prev() ECLOG_OVERRIDE
-				{
-					return prev_;
-				}
-
-				virtual const LinkedListNode* prev() const ECLOG_OVERRIDE
-				{
-					return prev_;
-				}
-
-				virtual LinkedListNode* next() ECLOG_OVERRIDE
-				{
-					return next_;
-				}
-
-				virtual const LinkedListNode* next() const ECLOG_OVERRIDE
-				{
-					return next_;
-				}
-
-			public:
-				void setPrev(LinkedListNode* prev)
-				{
-					prev_ = prev;
-				}
-
-				void setNext(LinkedListNode* next)
-				{
-					next_ = next;
-				}
-
-			private:
-				LinkedListNode* prev_;
-				LinkedListNode* next_;
-			};
-
-			class Element : public LinkedListNode {
-			public:
-				virtual KeyNode& key() ECLOG_OVERRIDE
-				{
-					return *key_;
-				}
-
-				virtual const KeyNode& key() const ECLOG_OVERRIDE
-				{
-					return *key_;
-				}
-
-				virtual ValueNode& value() ECLOG_OVERRIDE
-				{
-					return *value_;
-				}
-
-				virtual const ValueNode& value() const ECLOG_OVERRIDE
-				{
-					return *value_;
-				}
-
-				virtual void updateValue(const ValueNode& value) ECLOG_OVERRIDE
-				{
-					ValueNode* p = Factory::create(value);
-
-					Factory::destroy(value_);
-
-					value_ = p;
-				}
-
-				virtual void updateValue(const eclog::ValueDesc& desc) ECLOG_OVERRIDE
-				{
-					ValueNode* p = Factory::create(desc);
-
-					Factory::destroy(value_);
-
-					value_ = p;
-				}
-
-			public:
-				void setKey(KeyNode* key)
-				{
-					key_ = key;
-				}
-
-				void setValue(ValueNode* value)
-				{
-					value_ = value;
-				}
-
-				RbTreeNode* rbTreeNode()
-				{
-					return &rbTreeNode_;
-				}
-
-			public:
-				static Element* getBaseAddress(RbTreeNode* p)
-				{
-					return (Element*)((char*)p - Element().offsetOfRbTreeNode());
-				}
-
-				static const Element* getBaseAddress(const RbTreeNode* p)
-				{
-					return (const Element*)((const char*)p - Element().offsetOfRbTreeNode());
-				}
-
-			private:
-				ptrdiff_t offsetOfRbTreeNode() const
-				{
-					return (const char*)&rbTreeNode_ - (const char*)this;
-				}
-
-			private:
-				KeyNode* key_;
-				ValueNode* value_;
-				RbTreeNode rbTreeNode_;
-			};
-
-			struct RbTreeNodeTraits
-			{
-				typedef int ColorType;
-
-				static RbTreeNode* getParent(const RbTreeNode* node)
-				{
-					return node->parent;
-				}
-
-				static void setParent(RbTreeNode* node, RbTreeNode* parent)
-				{
-					node->parent = parent;
-				}
-
-				static RbTreeNode* getLeft(const RbTreeNode* node)
-				{
-					return node->left;
-				}
-
-				static void setLeft(RbTreeNode* node, RbTreeNode* left)
-				{
-					node->left = left;
-				}
-
-				static RbTreeNode* getRight(const RbTreeNode* node)
-				{
-					return node->right;
-				}
-
-				static void setRight(RbTreeNode* node, RbTreeNode* right)
-				{
-					node->right = right;
-				}
-
-				static ColorType getColor(const RbTreeNode* node)
-				{
-					return node->color;
-				}
-
-				static void setColor(RbTreeNode* node, ColorType color)
-				{
-					node->color = color;
-				}
-
-				static ColorType red()
-				{
-					return 0;
-				}
-
-				static ColorType black()
-				{
-					return 1;
-				}
-			};
-
-			struct RbTreeNodeCompare
-			{
-				bool operator()(const cstring& a, const RbTreeNode& b) const
-				{
-					return a < Element::getBaseAddress(&b)->key().str();
-				}
-
-				bool operator()(const RbTreeNode& a, const cstring& b) const
-				{
-					return Element::getBaseAddress(&a)->key().str() < b;
-				}
-
-				bool operator()(const RbTreeNode& a, const RbTreeNode& b) const
-				{
-					return Element::getBaseAddress(&a)->key().str() < Element::getBaseAddress(&b)->key().str();
-				}
-			};
-
-			struct LinkedListNodeTraits
-			{
-				static LinkedListNode* getPrev(const LinkedListNode* p)
-				{
-					return (LinkedListNode*)p->prev();
-				}
-
-				static void setPrev(LinkedListNode* p, LinkedListNode* prev)
-				{
-					p->setPrev(prev);
-				}
-
-				static LinkedListNode* getNext(const LinkedListNode* p)
-				{
-					return (LinkedListNode*)p->next();
-				}
-
-				static void setNext(LinkedListNode* p, LinkedListNode* next)
-				{
-					p->setNext(next);
-				}
-			};
-
-			typedef RbTree<RbTreeNode, RbTreeNodeTraits, RbTreeNodeCompare> Tree;
-			typedef LinkedList<LinkedListNode, LinkedListNodeTraits> List;
-
-			typedef typename Factory::AllocType Alloc;
-
+		class LinkedListNode : public ObjectNode::Element {
 		public:
-			ObjectNodeImpl()
+			virtual KeyNode& key() ECLOG_OVERRIDE
 			{
+				ECLOG_FAULT(OutOfRange);
 			}
 
-			explicit ObjectNodeImpl(const ValueDesc& desc)
+			virtual const KeyNode& key() const ECLOG_OVERRIDE
 			{
-				assign((const ObjectDesc&)desc);
+				ECLOG_FAULT(OutOfRange);
 			}
 
-			explicit ObjectNodeImpl(const ObjectNode& other)
+			virtual ValueNode& value() ECLOG_OVERRIDE
 			{
-				assign(other);
+				ECLOG_FAULT(OutOfRange);
 			}
 
-			~ObjectNodeImpl()
+			virtual const ValueNode& value() const ECLOG_OVERRIDE
 			{
-				remove(begin(), end());
+				ECLOG_FAULT(OutOfRange);
+			}
+
+			virtual void updateValue(const ValueNode&) ECLOG_OVERRIDE
+			{
+				ECLOG_FAULT(OutOfRange);
+			}
+
+			virtual void updateValue(const ValueDesc&) ECLOG_OVERRIDE
+			{
+				ECLOG_FAULT(OutOfRange);
+			}
+
+			virtual LinkedListNode* prev() ECLOG_OVERRIDE
+			{
+				return prev_;
+			}
+
+			virtual const LinkedListNode* prev() const ECLOG_OVERRIDE
+			{
+				return prev_;
+			}
+
+			virtual LinkedListNode* next() ECLOG_OVERRIDE
+			{
+				return next_;
+			}
+
+			virtual const LinkedListNode* next() const ECLOG_OVERRIDE
+			{
+				return next_;
 			}
 
 		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
+			void setPrev(LinkedListNode* prev)
 			{
-				return node_type_object;
+				prev_ = prev;
 			}
 
-			virtual void clear() ECLOG_OVERRIDE
+			void setNext(LinkedListNode* next)
 			{
-				remove(begin(), end());
-			}
-
-			virtual bool empty() const ECLOG_OVERRIDE
-			{
-				return list_.empty();
-			}
-
-			virtual size_t size() const ECLOG_OVERRIDE
-			{
-				return list_.size();
-			}
-
-			virtual Iterator begin() ECLOG_OVERRIDE
-			{
-				return list_.begin();
-			}
-
-			virtual Iterator end() ECLOG_OVERRIDE
-			{
-				return list_.end();
-			}
-
-			virtual ConstIterator begin() const ECLOG_OVERRIDE
-			{
-				return list_.begin();
-			}
-
-			virtual ConstIterator end() const ECLOG_OVERRIDE
-			{
-				return list_.end();
-			}
-
-			virtual bool contains(cstring key) const ECLOG_OVERRIDE
-			{
-				return tree_.find(key) != tree_.end();
-			}
-
-			virtual Iterator find(cstring key) ECLOG_OVERRIDE
-			{
-				RbTreeNode* p = tree_.find(key);
-
-				if (p == tree_.end()) {
-					return list_.end();
-				}
-
-				return Element::getBaseAddress(p);
-			}
-
-			virtual ConstIterator find(cstring key) const ECLOG_OVERRIDE
-			{
-				const RbTreeNode* p = tree_.find(key);
-
-				if (p == tree_.end()) {
-					return list_.end();
-				}
-
-				return Element::getBaseAddress(p);
-			}
-
-			virtual Pair<Iterator, bool> insert(Iterator pos, const ObjectNode::Element& element) ECLOG_OVERRIDE
-			{
-				return insert(pos.get(), element.key(), element.value());
-			}
-
-			virtual Pair<Iterator, bool> insert(Iterator pos, const KeyNode& key, const ValueNode& value) ECLOG_OVERRIDE
-			{
-				return insert(pos.get(), key, value);
-			}
-
-			virtual Pair<Iterator, bool> insert(Iterator pos, const eclog::KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
-			{
-				return insert(pos.get(), key, value);
-			}
-
-			virtual Pair<Iterator, bool> insert(Iterator pos, const KeyNode& key, const eclog::ValueDesc& value) ECLOG_OVERRIDE
-			{
-				return insert(pos.get(), key, value);
-			}
-
-			virtual Pair<Iterator, bool> insert(Iterator pos, const eclog::KeyDesc& key, const eclog::ValueDesc& value) ECLOG_OVERRIDE
-			{
-				return insert(pos.get(), key, value);
-			}
-
-			virtual Iterator insertForce(Iterator pos, const ObjectNode::Element& element) ECLOG_OVERRIDE
-			{
-				return insertForce(pos.get(), element.key(), element.value());
-			}
-
-			virtual Iterator insertForce(Iterator pos, const KeyNode& key, const ValueNode& value) ECLOG_OVERRIDE
-			{
-				return insertForce(pos.get(), key, value);
-			}
-
-			virtual Iterator insertForce(Iterator pos, const eclog::KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
-			{
-				return insertForce(pos.get(), key, value);
-			}
-
-			virtual Iterator insertForce(Iterator pos, const KeyNode& key, const eclog::ValueDesc& value) ECLOG_OVERRIDE
-			{
-				return insertForce(pos.get(), key, value);
-			}
-
-			virtual Iterator insertForce(Iterator pos, const eclog::KeyDesc& key, const eclog::ValueDesc& value) ECLOG_OVERRIDE
-			{
-				return insertForce(pos.get(), key, value);
-			}
-
-			virtual void merge(const ObjectDesc& patch) ECLOG_OVERRIDE
-			{
-				ObjectNodeImpl t(patch);
-
-				merge(t);
-			}
-
-			virtual void merge(const ObjectNode& patch) ECLOG_OVERRIDE
-			{
-				ObjectNodeImpl t(patch);
-
-				merge(t);
-			}
-
-			virtual void remove(Iterator pos) ECLOG_OVERRIDE
-			{
-				tree_.erase(((Element*)pos.get())->rbTreeNode());
-				list_.erase((LinkedListNode*)pos.get());
-
-				Factory::destroy(&pos->key());
-				Factory::destroy(&pos->value());
-
-				destroy<Element, Alloc>((Element*)pos.get());
-			}
-
-			virtual size_t remove(Iterator first, Iterator last) ECLOG_OVERRIDE
-			{
-				size_t count = 0;
-
-				while (first != last)
-				{
-					remove(first++);
-
-					++count;
-				}
-
-				return count;
-			}
-
-			virtual bool remove(cstring key) ECLOG_OVERRIDE
-			{
-				ObjectNode::Iterator it = find(key);
-
-				if (it != end())
-				{
-					remove(it);
-					return true;
-				}
-
-				return false;
-			}
-
-			virtual void parse(eclog::Context& ctx) ECLOG_OVERRIDE
-			{
-				ObjectNodeImpl t;
-
-				DocumentParseHandler<typename Factory::AllocType> handler(t);
-
-				eclog::parse(ctx, handler);
-
-				swap(t);
-			}
-
-			virtual void parse(eclog::Context& ctx, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				ObjectNodeImpl t;
-
-				DocumentParseHandler<typename Factory::AllocType> handler(t);
-
-				eclog::parse(ctx, handler, ec);
-
-				if (ec) {
-					return;
-				}
-
-				swap(t);
-			}
-
-			virtual void parse(InputStream& stream) ECLOG_OVERRIDE
-			{
-				BasicDynamicParsingBuffer<typename Factory::AllocType> buffer;
-				eclog::Context ctx(stream, buffer);
-
-				parse(ctx);
-			}
-
-			virtual void parse(InputStream& stream, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				BasicDynamicParsingBuffer<typename Factory::AllocType> buffer;
-				eclog::Context ctx(stream, buffer);
-
-				parse(ctx, ec);
-			}
-
-			virtual void parse(cstring str) ECLOG_OVERRIDE
-			{
-				MemoryInputStream stream(str.data(), str.size());
-
-				parse(stream);
-			}
-
-			virtual void parse(cstring str, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				MemoryInputStream stream(str.data(), str.size());
-
-				parse(stream, ec);
-			}
-			
-			virtual void parse(std::istream& stream) ECLOG_OVERRIDE
-			{
-				StdStreamInputStream is(stream);
-
-				parse(is);
-			}
-
-			virtual void parse(std::istream& stream, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				StdStreamInputStream is(stream);
-
-				parse(is, ec);
-			}
-
-			virtual void parse(const std::string& str) ECLOG_OVERRIDE
-			{
-				parse(cstring(str.data(), str.size()));
-			}
-
-			virtual void parse(const std::string& str, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				parse(cstring(str.data(), str.size()), ec);
-			}
-
-			virtual void parse(const char* str) ECLOG_OVERRIDE
-			{
-				parse(cstring(str));
-			}
-
-			virtual void parse(const char* str, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				parse(cstring(str), ec);
-			}
-
-			virtual void render(OutputStream& stream) const ECLOG_OVERRIDE
-			{
-				detail::DocumentRenderer renderer(stream);
-
-				renderer.render(*this, 0);
-			}
-
-			virtual void render(OutputStream& stream, ErrorCode& ec) const ECLOG_OVERRIDE
-			{
-				detail::DocumentRenderer renderer(stream);
-
-				renderer.render(*this, &ec);
-			}
-
-			virtual void render(OutputStream& stream, const RendererConfig& rc) const ECLOG_OVERRIDE
-			{
-				detail::DocumentRenderer renderer(stream, rc);
-
-				renderer.render(*this, 0);
-			}
-
-			virtual void render(OutputStream& stream, const RendererConfig& rc, ErrorCode& ec) const ECLOG_OVERRIDE
-			{
-				detail::DocumentRenderer renderer(stream, rc);
-
-				renderer.render(*this, &ec);
-			}
-
-			virtual void render(std::ostream& stream) const ECLOG_OVERRIDE
-			{
-				StdStreamOutputStream os(stream);
-
-				render(os);
-			}
-
-			virtual void render(std::ostream& stream, ErrorCode& ec) const ECLOG_OVERRIDE
-			{
-				StdStreamOutputStream os(stream);
-
-				render(os, ec);
-			}
-
-			virtual void render(std::ostream& stream, const RendererConfig& rc) const ECLOG_OVERRIDE
-			{
-				StdStreamOutputStream os(stream);
-
-				render(os, rc);
-			}
-
-			virtual void render(std::ostream& stream, const RendererConfig& rc, ErrorCode& ec) const ECLOG_OVERRIDE
-			{
-				StdStreamOutputStream os(stream);
-
-				render(os, rc, ec);
-			}
-
-			virtual void assign(const ObjectDesc& desc) ECLOG_OVERRIDE
-			{
-				ObjectNodeImpl t;
-
-				for (size_t i = 0; i < desc.objectSize(); ++i)
-				{
-					t.appendForce(desc.object()[i].first, desc.object()[i].second);
-				}
-
-				swap(t);
-			}
-
-			virtual void assign(const ObjectNode& other) ECLOG_OVERRIDE
-			{
-				if (&other == this) {
-					return;
-				}
-
-				ObjectNodeImpl t;
-
-				for (ObjectNode::ConstIterator it = other.begin(); it != other.end(); ++it)
-				{
-					t.append(it->key(), it->value());
-				}
-
-				swap(t);
-			}
-
-		public:
-			void swap(ObjectNodeImpl& other)
-			{
-				detail::swap(tree_, other.tree_);
-				detail::swap(list_, other.list_);
+				next_ = next;
 			}
 
 		private:
-			template<typename K, typename V>
-			Pair<Element*, bool> insert(ObjectNode::Element* pos, const K& keyArg, const V& valueArg)
+			LinkedListNode* prev_;
+			LinkedListNode* next_;
+		};
+
+		class Element : public LinkedListNode {
+		public:
+			virtual KeyNode& key() ECLOG_OVERRIDE
 			{
-				NodePtr<KeyNode, Factory> key(Factory::create(keyArg));
-
-				UniquePtr<Element, Alloc> p(create<Element, Alloc>());
-
-				p->setKey(key.get());
-
-				Pair<RbTreeNode*, bool> result = tree_.insertUnique(p->rbTreeNode());
-
-				if (result.second)
-				{
-					NodePtr<ValueNode, Factory> value;
-
-					ECLOG_TRY
-					{
-						value.reset(Factory::create(valueArg));
-					}
-						ECLOG_CATCH_ALL
-					{
-						tree_.erase(p->rbTreeNode());
-						ECLOG_RETHROW;
-					}
-
-					list_.insertBefore(p.get(), (LinkedListNode*)pos);
-
-					key.release();
-					p->setValue(value.release());
-
-					return Pair<Element*, bool>(p.release(), true);
-				}
-				else
-				{
-					return Pair<Element*, bool>(Element::getBaseAddress(result.first), false);
-				}
+				return *key_;
 			}
 
-			template<typename K, typename V>
-			Element* insertForce(ObjectNode::Element* pos, const K& keyArg, const V& valueArg)
+			virtual const KeyNode& key() const ECLOG_OVERRIDE
 			{
-				NodePtr<KeyNode, Factory> key(Factory::create(keyArg));
-				NodePtr<ValueNode, Factory> value(Factory::create(valueArg));
+				return *key_;
+			}
 
-				UniquePtr<Element, Alloc> p(create<Element, Alloc>());
+			virtual ValueNode& value() ECLOG_OVERRIDE
+			{
+				return *value_;
+			}
 
-				p->setKey(key.get());
-				p->setValue(value.get());
+			virtual const ValueNode& value() const ECLOG_OVERRIDE
+			{
+				return *value_;
+			}
+
+			virtual void updateValue(const ValueNode& value) ECLOG_OVERRIDE
+			{
+				ValueNode* p = Factory::create(value);
+
+				Factory::destroy(value_);
+
+				value_ = p;
+			}
+
+			virtual void updateValue(const ValueDesc& desc) ECLOG_OVERRIDE
+			{
+				ValueNode* p = Factory::create(desc);
+
+				Factory::destroy(value_);
+
+				value_ = p;
+			}
+
+		public:
+			void setKey(KeyNode* key)
+			{
+				key_ = key;
+			}
+
+			void setValue(ValueNode* value)
+			{
+				value_ = value;
+			}
+
+			RbTreeNode* rbTreeNode()
+			{
+				return &rbTreeNode_;
+			}
+
+		public:
+			static Element* getBaseAddress(RbTreeNode* p)
+			{
+				return (Element*)((char*)p - Element().offsetOfRbTreeNode());
+			}
+
+			static const Element* getBaseAddress(const RbTreeNode* p)
+			{
+				return (const Element*)((const char*)p - Element().offsetOfRbTreeNode());
+			}
+
+		private:
+			ptrdiff_t offsetOfRbTreeNode() const
+			{
+				return (const char*)&rbTreeNode_ - (const char*)this;
+			}
+
+		private:
+			KeyNode* key_;
+			ValueNode* value_;
+			RbTreeNode rbTreeNode_;
+		};
+
+		struct RbTreeNodeTraits
+		{
+			typedef int ColorType;
+
+			static RbTreeNode* getParent(const RbTreeNode* node)
+			{
+				return node->parent;
+			}
+
+			static void setParent(RbTreeNode* node, RbTreeNode* parent)
+			{
+				node->parent = parent;
+			}
+
+			static RbTreeNode* getLeft(const RbTreeNode* node)
+			{
+				return node->left;
+			}
+
+			static void setLeft(RbTreeNode* node, RbTreeNode* left)
+			{
+				node->left = left;
+			}
+
+			static RbTreeNode* getRight(const RbTreeNode* node)
+			{
+				return node->right;
+			}
+
+			static void setRight(RbTreeNode* node, RbTreeNode* right)
+			{
+				node->right = right;
+			}
+
+			static ColorType getColor(const RbTreeNode* node)
+			{
+				return node->color;
+			}
+
+			static void setColor(RbTreeNode* node, ColorType color)
+			{
+				node->color = color;
+			}
+
+			static ColorType red()
+			{
+				return 0;
+			}
+
+			static ColorType black()
+			{
+				return 1;
+			}
+		};
+
+		struct RbTreeNodeCompare
+		{
+			bool operator()(const cstring& a, const RbTreeNode& b) const
+			{
+				return a < Element::getBaseAddress(&b)->key().str();
+			}
+
+			bool operator()(const RbTreeNode& a, const cstring& b) const
+			{
+				return Element::getBaseAddress(&a)->key().str() < b;
+			}
+
+			bool operator()(const RbTreeNode& a, const RbTreeNode& b) const
+			{
+				return Element::getBaseAddress(&a)->key().str() < Element::getBaseAddress(&b)->key().str();
+			}
+		};
+
+		struct LinkedListNodeTraits
+		{
+			static LinkedListNode* getPrev(const LinkedListNode* p)
+			{
+				return (LinkedListNode*)p->prev();
+			}
+
+			static void setPrev(LinkedListNode* p, LinkedListNode* prev)
+			{
+				p->setPrev(prev);
+			}
+
+			static LinkedListNode* getNext(const LinkedListNode* p)
+			{
+				return (LinkedListNode*)p->next();
+			}
+
+			static void setNext(LinkedListNode* p, LinkedListNode* next)
+			{
+				p->setNext(next);
+			}
+		};
+
+		typedef RbTree<RbTreeNode, RbTreeNodeTraits, RbTreeNodeCompare> Tree;
+		typedef LinkedList<LinkedListNode, LinkedListNodeTraits> List;
+
+		typedef typename Factory::AllocType Alloc;
+
+	public:
+		ObjectNodeImpl()
+		{
+		}
+
+		explicit ObjectNodeImpl(const ValueDesc& desc)
+		{
+			assign((const ObjectDesc&)desc);
+		}
+
+		explicit ObjectNodeImpl(const ObjectNode& other)
+		{
+			assign(other);
+		}
+
+		~ObjectNodeImpl()
+		{
+			remove(begin(), end());
+		}
+
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_object;
+		}
+
+		virtual void clear() ECLOG_OVERRIDE
+		{
+			remove(begin(), end());
+		}
+
+		virtual bool empty() const ECLOG_OVERRIDE
+		{
+			return list_.empty();
+		}
+
+		virtual size_t size() const ECLOG_OVERRIDE
+		{
+			return list_.size();
+		}
+
+		virtual Iterator begin() ECLOG_OVERRIDE
+		{
+			return list_.begin();
+		}
+
+		virtual Iterator end() ECLOG_OVERRIDE
+		{
+			return list_.end();
+		}
+
+		virtual ConstIterator begin() const ECLOG_OVERRIDE
+		{
+			return list_.begin();
+		}
+
+		virtual ConstIterator end() const ECLOG_OVERRIDE
+		{
+			return list_.end();
+		}
+
+		virtual bool contains(cstring key) const ECLOG_OVERRIDE
+		{
+			return tree_.find(key) != tree_.end();
+		}
+
+		virtual Iterator find(cstring key) ECLOG_OVERRIDE
+		{
+			RbTreeNode* p = tree_.find(key);
+
+			if (p == tree_.end()) {
+				return list_.end();
+			}
+
+			return Element::getBaseAddress(p);
+		}
+
+		virtual ConstIterator find(cstring key) const ECLOG_OVERRIDE
+		{
+			const RbTreeNode* p = tree_.find(key);
+
+			if (p == tree_.end()) {
+				return list_.end();
+			}
+
+			return Element::getBaseAddress(p);
+		}
+
+		virtual Pair<Iterator, bool> insert(Iterator pos, const ObjectNode::Element& element) ECLOG_OVERRIDE
+		{
+			return insert(pos.get(), element.key(), element.value());
+		}
+
+		virtual Pair<Iterator, bool> insert(Iterator pos, const KeyNode& key, const ValueNode& value) ECLOG_OVERRIDE
+		{
+			return insert(pos.get(), key, value);
+		}
+
+		virtual Pair<Iterator, bool> insert(Iterator pos, const KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
+		{
+			return insert(pos.get(), key, value);
+		}
+
+		virtual Pair<Iterator, bool> insert(Iterator pos, const KeyNode& key, const ValueDesc& value) ECLOG_OVERRIDE
+		{
+			return insert(pos.get(), key, value);
+		}
+
+		virtual Pair<Iterator, bool> insert(Iterator pos, const KeyDesc& key, const ValueDesc& value) ECLOG_OVERRIDE
+		{
+			return insert(pos.get(), key, value);
+		}
+
+		virtual Iterator insertForce(Iterator pos, const ObjectNode::Element& element) ECLOG_OVERRIDE
+		{
+			return insertForce(pos.get(), element.key(), element.value());
+		}
+
+		virtual Iterator insertForce(Iterator pos, const KeyNode& key, const ValueNode& value) ECLOG_OVERRIDE
+		{
+			return insertForce(pos.get(), key, value);
+		}
+
+		virtual Iterator insertForce(Iterator pos, const KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
+		{
+			return insertForce(pos.get(), key, value);
+		}
+
+		virtual Iterator insertForce(Iterator pos, const KeyNode& key, const ValueDesc& value) ECLOG_OVERRIDE
+		{
+			return insertForce(pos.get(), key, value);
+		}
+
+		virtual Iterator insertForce(Iterator pos, const KeyDesc& key, const ValueDesc& value) ECLOG_OVERRIDE
+		{
+			return insertForce(pos.get(), key, value);
+		}
+
+		virtual void merge(const ObjectDesc& patch) ECLOG_OVERRIDE
+		{
+			ObjectNodeImpl t(patch);
+
+			merge(t);
+		}
+
+		virtual void merge(const ObjectNode& patch) ECLOG_OVERRIDE
+		{
+			ObjectNodeImpl t(patch);
+
+			merge(t);
+		}
+
+		virtual void remove(Iterator pos) ECLOG_OVERRIDE
+		{
+			tree_.erase(((Element*)pos.get())->rbTreeNode());
+			list_.erase((LinkedListNode*)pos.get());
+
+			Factory::destroy(&pos->key());
+			Factory::destroy(&pos->value());
+
+			destroy<Element, Alloc>((Element*)pos.get());
+		}
+
+		virtual size_t remove(Iterator first, Iterator last) ECLOG_OVERRIDE
+		{
+			size_t count = 0;
+
+			while (first != last)
+			{
+				remove(first++);
+
+				++count;
+			}
+
+			return count;
+		}
+
+		virtual bool remove(cstring key) ECLOG_OVERRIDE
+		{
+			ObjectNode::Iterator it = find(key);
+
+			if (it != end())
+			{
+				remove(it);
+				return true;
+			}
+
+			return false;
+		}
+
+		virtual void parse(eclog::Context& ctx) ECLOG_OVERRIDE
+		{
+			ObjectNodeImpl t;
+
+			DocumentParseHandler<typename Factory::AllocType> handler(t);
+
+			eclog::parse(ctx, handler);
+
+			swap(t);
+		}
+
+		virtual void parse(eclog::Context& ctx, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			ObjectNodeImpl t;
+
+			DocumentParseHandler<typename Factory::AllocType> handler(t);
+
+			eclog::parse(ctx, handler, ec);
+
+			if (ec) {
+				return;
+			}
+
+			swap(t);
+		}
+
+		virtual void parse(InputStream& stream) ECLOG_OVERRIDE
+		{
+			BasicDynamicParsingBuffer<typename Factory::AllocType> buffer;
+			eclog::Context ctx(stream, buffer);
+
+			parse(ctx);
+		}
+
+		virtual void parse(InputStream& stream, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			BasicDynamicParsingBuffer<typename Factory::AllocType> buffer;
+			eclog::Context ctx(stream, buffer);
+
+			parse(ctx, ec);
+		}
+
+		virtual void parse(cstring str) ECLOG_OVERRIDE
+		{
+			MemoryInputStream stream(str.data(), str.size());
+
+			parse(stream);
+		}
+
+		virtual void parse(cstring str, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			MemoryInputStream stream(str.data(), str.size());
+
+			parse(stream, ec);
+		}
+		
+		virtual void parse(std::istream& stream) ECLOG_OVERRIDE
+		{
+			StdStreamInputStream is(stream);
+
+			parse(is);
+		}
+
+		virtual void parse(std::istream& stream, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			StdStreamInputStream is(stream);
+
+			parse(is, ec);
+		}
+
+		virtual void parse(const std::string& str) ECLOG_OVERRIDE
+		{
+			parse(cstring(str.data(), str.size()));
+		}
+
+		virtual void parse(const std::string& str, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			parse(cstring(str.data(), str.size()), ec);
+		}
+
+		virtual void parse(const char* str) ECLOG_OVERRIDE
+		{
+			parse(cstring(str));
+		}
+
+		virtual void parse(const char* str, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			parse(cstring(str), ec);
+		}
+
+		virtual void render(OutputStream& stream) const ECLOG_OVERRIDE
+		{
+			detail::DocumentRenderer renderer(stream);
+
+			renderer.render(*this, 0);
+		}
+
+		virtual void render(OutputStream& stream, ErrorCode& ec) const ECLOG_OVERRIDE
+		{
+			detail::DocumentRenderer renderer(stream);
+
+			renderer.render(*this, &ec);
+		}
+
+		virtual void render(OutputStream& stream, const RendererConfig& rc) const ECLOG_OVERRIDE
+		{
+			detail::DocumentRenderer renderer(stream, rc);
+
+			renderer.render(*this, 0);
+		}
+
+		virtual void render(OutputStream& stream, const RendererConfig& rc, ErrorCode& ec) const ECLOG_OVERRIDE
+		{
+			detail::DocumentRenderer renderer(stream, rc);
+
+			renderer.render(*this, &ec);
+		}
+
+		virtual void render(std::ostream& stream) const ECLOG_OVERRIDE
+		{
+			StdStreamOutputStream os(stream);
+
+			render(os);
+		}
+
+		virtual void render(std::ostream& stream, ErrorCode& ec) const ECLOG_OVERRIDE
+		{
+			StdStreamOutputStream os(stream);
+
+			render(os, ec);
+		}
+
+		virtual void render(std::ostream& stream, const RendererConfig& rc) const ECLOG_OVERRIDE
+		{
+			StdStreamOutputStream os(stream);
+
+			render(os, rc);
+		}
+
+		virtual void render(std::ostream& stream, const RendererConfig& rc, ErrorCode& ec) const ECLOG_OVERRIDE
+		{
+			StdStreamOutputStream os(stream);
+
+			render(os, rc, ec);
+		}
+
+		virtual void assign(const ObjectDesc& desc) ECLOG_OVERRIDE
+		{
+			ObjectNodeImpl t;
+
+			for (size_t i = 0; i < desc.objectSize(); ++i)
+			{
+				t.appendForce(desc.object()[i].first, desc.object()[i].second);
+			}
+
+			swap(t);
+		}
+
+		virtual void assign(const ObjectNode& other) ECLOG_OVERRIDE
+		{
+			if (&other == this) {
+				return;
+			}
+
+			ObjectNodeImpl t;
+
+			for (ObjectNode::ConstIterator it = other.begin(); it != other.end(); ++it)
+			{
+				t.append(it->key(), it->value());
+			}
+
+			swap(t);
+		}
+
+	public:
+		void swap(ObjectNodeImpl& other)
+		{
+			detail::swap(tree_, other.tree_);
+			detail::swap(list_, other.list_);
+		}
+
+	private:
+		template<typename K, typename V>
+		Pair<Element*, bool> insert(ObjectNode::Element* pos, const K& keyArg, const V& valueArg)
+		{
+			NodePtr<KeyNode, Factory> key(Factory::create(keyArg));
+
+			UniquePtr<Element, Alloc> p(create<Element, Alloc>());
+
+			p->setKey(key.get());
+
+			Pair<RbTreeNode*, bool> result = tree_.insertUnique(p->rbTreeNode());
+
+			if (result.second)
+			{
+				NodePtr<ValueNode, Factory> value;
+
+				ECLOG_TRY
+				{
+					value.reset(Factory::create(valueArg));
+				}
+					ECLOG_CATCH_ALL
+				{
+					tree_.erase(p->rbTreeNode());
+					ECLOG_RETHROW;
+				}
 
 				list_.insertBefore(p.get(), (LinkedListNode*)pos);
 
-				Pair<RbTreeNode*, bool> result = tree_.insertUnique(p->rbTreeNode());
+				key.release();
+				p->setValue(value.release());
 
-				if (result.second)
-				{
-					key.release();
-					value.release();
-
-					return p.release();
-				}
-				else
-				{
-					Element* p2 = Element::getBaseAddress(result.first);
-
-					list_.erase(p2);
-					list_.replace(p2, p.get());
-
-					Factory::destroy(&p2->key());
-					Factory::destroy(&p2->value());
-
-					p2->setKey(key.release());
-					p2->setValue(value.release());
-
-					return p2;
-				}
+				return Pair<Element*, bool>(p.release(), true);
 			}
-
-			void merge(ObjectNodeImpl& patch)
+			else
 			{
-				LinkedListNode* p = patch.list_.begin();
+				return Pair<Element*, bool>(Element::getBaseAddress(result.first), false);
+			}
+		}
 
-				while (p != patch.list_.end())
+		template<typename K, typename V>
+		Element* insertForce(ObjectNode::Element* pos, const K& keyArg, const V& valueArg)
+		{
+			NodePtr<KeyNode, Factory> key(Factory::create(keyArg));
+			NodePtr<ValueNode, Factory> value(Factory::create(valueArg));
+
+			UniquePtr<Element, Alloc> p(create<Element, Alloc>());
+
+			p->setKey(key.get());
+			p->setValue(value.get());
+
+			list_.insertBefore(p.get(), (LinkedListNode*)pos);
+
+			Pair<RbTreeNode*, bool> result = tree_.insertUnique(p->rbTreeNode());
+
+			if (result.second)
+			{
+				key.release();
+				value.release();
+
+				return p.release();
+			}
+			else
+			{
+				Element* p2 = Element::getBaseAddress(result.first);
+
+				list_.erase(p2);
+				list_.replace(p2, p.get());
+
+				Factory::destroy(&p2->key());
+				Factory::destroy(&p2->value());
+
+				p2->setKey(key.release());
+				p2->setValue(value.release());
+
+				return p2;
+			}
+		}
+
+		void merge(ObjectNodeImpl& patch)
+		{
+			LinkedListNode* p = patch.list_.begin();
+
+			while (p != patch.list_.end())
+			{
+				Element* patchElement = (Element*)p;
+				p = p->next();
+
+				RbTreeNode* rbTreeNode = tree_.find(patchElement->key().str());
+
+				if (rbTreeNode == tree_.end())
 				{
-					Element* patchElement = (Element*)p;
-					p = p->next();
-
-					RbTreeNode* rbTreeNode = tree_.find(patchElement->key().str());
-
-					if (rbTreeNode == tree_.end())
-					{
-						if (!patchElement->value().isNull())
-						{
-							if (patchElement->value().isObject()) {
-								removeNullNodes((ObjectNodeImpl&)patchElement->value());
-							}
-
-							patch.tree_.erase(patchElement->rbTreeNode());
-							patch.list_.erase(patchElement);
-
-							tree_.insertUnique(patchElement->rbTreeNode());
-							list_.insertBefore(patchElement, list_.end());
-						}
-
-						continue;
-					}
-
-					Element* targetElement = Element::getBaseAddress(rbTreeNode);
-
-					if (patchElement->value().isNull())
-					{
-						Factory::destroy(&targetElement->key());
-						Factory::destroy(&targetElement->value());
-
-						tree_.erase(targetElement->rbTreeNode());
-						list_.erase(targetElement);
-
-						destroy<Element, Alloc>(targetElement);
-					}
-					else if (patchElement->value().isObject() && targetElement->value().isObject())
-					{
-						((ObjectNodeImpl&)targetElement->value()).merge((ObjectNodeImpl&)patchElement->value());
-					}
-					else
+					if (!patchElement->value().isNull())
 					{
 						if (patchElement->value().isObject()) {
 							removeNullNodes((ObjectNodeImpl&)patchElement->value());
 						}
 
-						Factory::destroy(&targetElement->key());
-						Factory::destroy(&targetElement->value());
-
-						targetElement->setKey(&patchElement->key());
-						targetElement->setValue(&patchElement->value());
-
 						patch.tree_.erase(patchElement->rbTreeNode());
 						patch.list_.erase(patchElement);
 
-						destroy<Element, Alloc>(patchElement);
+						tree_.insertUnique(patchElement->rbTreeNode());
+						list_.insertBefore(patchElement, list_.end());
 					}
+
+					continue;
 				}
-			}
 
-			void removeNullNodes(ObjectNodeImpl& obj)
-			{
-				LinkedListNode* p = obj.list_.begin();
+				Element* targetElement = Element::getBaseAddress(rbTreeNode);
 
-				while (p != obj.list_.end())
+				if (patchElement->value().isNull())
 				{
-					Element* element = (Element*)p;
-					p = p->next();
+					Factory::destroy(&targetElement->key());
+					Factory::destroy(&targetElement->value());
 
-					if (element->value().isNull())
-					{
-						obj.tree_.erase(element->rbTreeNode());
-						obj.list_.erase(element);
+					tree_.erase(targetElement->rbTreeNode());
+					list_.erase(targetElement);
 
-						Factory::destroy(&element->key());
-						Factory::destroy(&element->value());
-
-						destroy<Element, Alloc>(element);
+					destroy<Element, Alloc>(targetElement);
+				}
+				else if (patchElement->value().isObject() && targetElement->value().isObject())
+				{
+					((ObjectNodeImpl&)targetElement->value()).merge((ObjectNodeImpl&)patchElement->value());
+				}
+				else
+				{
+					if (patchElement->value().isObject()) {
+						removeNullNodes((ObjectNodeImpl&)patchElement->value());
 					}
-					else if (element->value().isObject())
-					{
-						removeNullNodes((ObjectNodeImpl&)element->value());
-					}
+
+					Factory::destroy(&targetElement->key());
+					Factory::destroy(&targetElement->value());
+
+					targetElement->setKey(&patchElement->key());
+					targetElement->setValue(&patchElement->value());
+
+					patch.tree_.erase(patchElement->rbTreeNode());
+					patch.list_.erase(patchElement);
+
+					destroy<Element, Alloc>(patchElement);
 				}
 			}
+		}
 
-		private:
-			Tree tree_;
-			List list_;
-		};
+		void removeNullNodes(ObjectNodeImpl& obj)
+		{
+			LinkedListNode* p = obj.list_.begin();
 
-	} // detail
-
-} // eclog
-
-namespace eclog {
-
-	namespace detail {
-
-		template<typename Alloc>
-		class KeyNodeImpl : public KeyNode {
-		public:
-			explicit KeyNodeImpl(const eclog::KeyDesc& desc) :
-				str_(((const KeyDesc&)desc).str()),
-				notation_(((const KeyDesc&)desc).notation()),
-				delimiter_(((const KeyDesc&)desc).delimiter())
+			while (p != obj.list_.end())
 			{
-			}
+				Element* element = (Element*)p;
+				p = p->next();
 
-			explicit KeyNodeImpl(const KeyNode& other) :
-				str_(other.str()),
-				notation_(other.notation()),
-				delimiter_(other.delimiter())
-			{
-			}
-
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_key;
-			}
-
-			virtual cstring str() const ECLOG_OVERRIDE
-			{
-				return str_.str();
-			}
-
-			virtual void setNotation(StringNotation notation) ECLOG_OVERRIDE
-			{
-				notation_ = notation;
-			}
-
-			virtual StringNotation notation() const ECLOG_OVERRIDE
-			{
-				return notation_;
-			}
-
-			virtual void setDelimiter(cstring delimiter) ECLOG_OVERRIDE
-			{
-				setDelimiter(delimiter, 0);
-			}
-
-			virtual void setDelimiter(cstring delimiter, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				setDelimiter(delimiter, &ec);
-			}
-
-			virtual cstring delimiter() const ECLOG_OVERRIDE
-			{
-				return delimiter_.str();
-			}
-
-		private:
-			void setDelimiter(cstring delimiter, ErrorCode* ec)
-			{
-				if (!StringDelimiter::validate(delimiter))
+				if (element->value().isNull())
 				{
-					ECLOG_ERROR(InvalidArgument);
-					return;
+					obj.tree_.erase(element->rbTreeNode());
+					obj.list_.erase(element);
+
+					Factory::destroy(&element->key());
+					Factory::destroy(&element->value());
+
+					destroy<Element, Alloc>(element);
 				}
-
-				delimiter_ = delimiter;
-			}
-
-		private:
-			ByteArray<Alloc> str_;
-
-			StringNotation notation_;
-			ByteArray<Alloc> delimiter_;
-		};
-
-	} // detail
-
-} // eclog
-
-namespace eclog {
-
-	namespace detail {
-
-		class NullNodeImpl : public NullNode, private NonCopyable {
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_null;
-			}
-
-			virtual Null value() const ECLOG_OVERRIDE
-			{
-				return null;
-			}
-
-			virtual void assign(const Null&) ECLOG_OVERRIDE
-			{
-			}
-
-			virtual void assign(const NullNode&) ECLOG_OVERRIDE
-			{
-			}
-		};
-
-	} // detail
-
-} // eclog
-
-namespace eclog {
-
-	namespace detail {
-
-		class BooleanNodeImpl : public BooleanNode, private NonCopyable {
-		public:
-			explicit BooleanNodeImpl(const ValueDesc& desc) :
-				value_(desc.boolean())
-			{
-			}
-
-			explicit BooleanNodeImpl(const BooleanNode& other) :
-				value_(other.value())
-			{
-			}
-
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_boolean;
-			}
-
-			virtual bool value() const ECLOG_OVERRIDE
-			{
-				return value_;
-			}
-
-			virtual void assign(bool value) ECLOG_OVERRIDE
-			{
-				value_ = value;
-			}
-
-			virtual void assign(const BooleanNode& other) ECLOG_OVERRIDE
-			{
-				if (&other == this) {
-					return;
-				}
-
-				value_ = other.value();
-			}
-
-		private:
-			bool value_;
-		};
-
-	} // detail
-
-} // eclog
-
-namespace eclog {
-
-	namespace detail {
-
-		template<typename Alloc>
-		class StringNodeImpl : public StringNode, private NonCopyable {
-		public:
-			explicit StringNodeImpl(const ValueDesc& desc) :
-				value_(desc.string()),
-				notation_(desc.stringNotation()),
-				delimiter_(desc.stringDelimiter())
-			{
-			}
-
-			explicit StringNodeImpl(const StringNode& other) :
-				value_(other.value()),
-				notation_(other.notation()),
-				delimiter_(other.delimiter())
-			{
-			}
-
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_string;
-			}
-
-			virtual cstring value() const ECLOG_OVERRIDE
-			{
-				return value_.str();
-			}
-
-			virtual void setNotation(StringNotation notation) ECLOG_OVERRIDE
-			{
-				notation_ = notation;
-			}
-
-			virtual StringNotation notation() const ECLOG_OVERRIDE
-			{
-				return notation_;
-			}
-
-			virtual void setDelimiter(cstring delimiter) ECLOG_OVERRIDE
-			{
-				setDelimiter(delimiter, 0);
-			}
-
-			virtual void setDelimiter(cstring delimiter, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				setDelimiter(delimiter, &ec);
-			}
-
-			virtual cstring delimiter() const ECLOG_OVERRIDE
-			{
-				return delimiter_.str();
-			}
-
-			virtual void assign(const StringDesc& desc) ECLOG_OVERRIDE
-			{
-				ByteArray<Alloc> value(desc.string());
-				ByteArray<Alloc> delimiter(desc.stringDelimiter());
-
-				swap(value_, value);
-				swap(delimiter_, delimiter);
-
-				notation_ = desc.stringNotation();
-			}
-
-			virtual void assign(const StringNode& other) ECLOG_OVERRIDE
-			{
-				if (&other == this) {
-					return;
-				}
-
-				ByteArray<Alloc> value(other.value());
-				ByteArray<Alloc> delimiter(other.delimiter());
-
-				swap(value_, value);
-				swap(delimiter_, delimiter);
-
-				notation_ = other.notation();
-			}
-
-		private:
-			void setDelimiter(cstring delimiter, ErrorCode* ec)
-			{
-				if (!StringDelimiter::validate(delimiter))
+				else if (element->value().isObject())
 				{
-					ECLOG_ERROR(InvalidArgument);
-					return;
+					removeNullNodes((ObjectNodeImpl&)element->value());
 				}
-
-				delimiter_ = delimiter;
 			}
+		}
 
-		private:
-			ByteArray<Alloc> value_;
+	private:
+		Tree tree_;
+		List list_;
+	};
 
-			StringNotation notation_;
-			ByteArray<Alloc> delimiter_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename Alloc>
+	class KeyNodeImpl : public KeyNode {
+	public:
+		explicit KeyNodeImpl(const KeyDesc& desc) :
+			str_(((const KeyDesc&)desc).str()),
+			notation_(((const KeyDesc&)desc).notation()),
+			delimiter_(((const KeyDesc&)desc).delimiter())
+		{
+		}
 
-		class NumberNodeImpl : public NumberNode, private NonCopyable {
-		public:
-			explicit NumberNodeImpl(const ValueDesc& desc) :
-				value_(desc.number()),
-				fracDigits_(desc.fracDigits())
+		explicit KeyNodeImpl(const KeyNode& other) :
+			str_(other.str()),
+			notation_(other.notation()),
+			delimiter_(other.delimiter())
+		{
+		}
+
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_key;
+		}
+
+		virtual cstring str() const ECLOG_OVERRIDE
+		{
+			return str_.str();
+		}
+
+		virtual void setNotation(StringNotation notation) ECLOG_OVERRIDE
+		{
+			notation_ = notation;
+		}
+
+		virtual StringNotation notation() const ECLOG_OVERRIDE
+		{
+			return notation_;
+		}
+
+		virtual void setDelimiter(cstring delimiter) ECLOG_OVERRIDE
+		{
+			setDelimiter(delimiter, 0);
+		}
+
+		virtual void setDelimiter(cstring delimiter, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			setDelimiter(delimiter, &ec);
+		}
+
+		virtual cstring delimiter() const ECLOG_OVERRIDE
+		{
+			return delimiter_.str();
+		}
+
+	private:
+		void setDelimiter(cstring delimiter, ErrorCode* ec)
+		{
+			if (!StringDelimiter::validate(delimiter))
 			{
+				ECLOG_ERROR(InvalidArgument);
+				return;
 			}
 
-			explicit NumberNodeImpl(const NumberNode& other)
-			{
-				assign(other);
-			}
+			delimiter_ = delimiter;
+		}
 
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_number;
-			}
+	private:
+		ByteArray<Alloc> str_;
 
-			virtual Number value() const ECLOG_OVERRIDE
-			{
-				return value_;
-			}
+		StringNotation notation_;
+		ByteArray<Alloc> delimiter_;
+	};
 
-			virtual void setFracDigits(int fracDigits) ECLOG_OVERRIDE
-			{
-				fracDigits_ = fracDigits;
-			}
-
-			virtual int fracDigits() const ECLOG_OVERRIDE
-			{
-				return fracDigits_;
-			}
-
-			virtual void assign(const NumberDesc& desc) ECLOG_OVERRIDE
-			{
-				value_ = desc.number();
-				fracDigits_ = desc.fracDigits();
-			}
-
-			virtual void assign(const NumberNode& other) ECLOG_OVERRIDE
-			{
-				if (&other == this) {
-					return;
-				}
-
-				value_ = other.value();
-				fracDigits_ = other.fracDigits();
-			}
-
-		private:
-			Number value_;
-
-			int fracDigits_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
+
+namespace vallest {
+namespace eclog {
+namespace detail {
+
+	class NullNodeImpl : public NullNode, private NonCopyable {
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_null;
+		}
+
+		virtual Null value() const ECLOG_OVERRIDE
+		{
+			return null;
+		}
+
+		virtual void assign(const Null&) ECLOG_OVERRIDE
+		{
+		}
+
+		virtual void assign(const NullNode&) ECLOG_OVERRIDE
+		{
+		}
+	};
+
+} // detail
+} // eclog
+} // vallest
+
+namespace vallest {
+namespace eclog {
+namespace detail {
+
+	class BooleanNodeImpl : public BooleanNode, private NonCopyable {
+	public:
+		explicit BooleanNodeImpl(const ValueDesc& desc) :
+			value_(desc.boolean())
+		{
+		}
+
+		explicit BooleanNodeImpl(const BooleanNode& other) :
+			value_(other.value())
+		{
+		}
+
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_boolean;
+		}
+
+		virtual bool value() const ECLOG_OVERRIDE
+		{
+			return value_;
+		}
+
+		virtual void assign(bool value) ECLOG_OVERRIDE
+		{
+			value_ = value;
+		}
+
+		virtual void assign(const BooleanNode& other) ECLOG_OVERRIDE
+		{
+			if (&other == this) {
+				return;
+			}
+
+			value_ = other.value();
+		}
+
+	private:
+		bool value_;
+	};
+
+} // detail
+} // eclog
+} // vallest
+
+namespace vallest {
+namespace eclog {
+namespace detail {
+
+	template<typename Alloc>
+	class StringNodeImpl : public StringNode, private NonCopyable {
+	public:
+		explicit StringNodeImpl(const ValueDesc& desc) :
+			value_(desc.string()),
+			notation_(desc.stringNotation()),
+			delimiter_(desc.stringDelimiter())
+		{
+		}
+
+		explicit StringNodeImpl(const StringNode& other) :
+			value_(other.value()),
+			notation_(other.notation()),
+			delimiter_(other.delimiter())
+		{
+		}
+
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_string;
+		}
+
+		virtual cstring value() const ECLOG_OVERRIDE
+		{
+			return value_.str();
+		}
+
+		virtual void setNotation(StringNotation notation) ECLOG_OVERRIDE
+		{
+			notation_ = notation;
+		}
+
+		virtual StringNotation notation() const ECLOG_OVERRIDE
+		{
+			return notation_;
+		}
+
+		virtual void setDelimiter(cstring delimiter) ECLOG_OVERRIDE
+		{
+			setDelimiter(delimiter, 0);
+		}
+
+		virtual void setDelimiter(cstring delimiter, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			setDelimiter(delimiter, &ec);
+		}
+
+		virtual cstring delimiter() const ECLOG_OVERRIDE
+		{
+			return delimiter_.str();
+		}
+
+		virtual void assign(const StringDesc& desc) ECLOG_OVERRIDE
+		{
+			ByteArray<Alloc> value(desc.string());
+			ByteArray<Alloc> delimiter(desc.stringDelimiter());
+
+			swap(value_, value);
+			swap(delimiter_, delimiter);
+
+			notation_ = desc.stringNotation();
+		}
+
+		virtual void assign(const StringNode& other) ECLOG_OVERRIDE
+		{
+			if (&other == this) {
+				return;
+			}
+
+			ByteArray<Alloc> value(other.value());
+			ByteArray<Alloc> delimiter(other.delimiter());
+
+			swap(value_, value);
+			swap(delimiter_, delimiter);
+
+			notation_ = other.notation();
+		}
+
+	private:
+		void setDelimiter(cstring delimiter, ErrorCode* ec)
+		{
+			if (!StringDelimiter::validate(delimiter))
+			{
+				ECLOG_ERROR(InvalidArgument);
+				return;
+			}
+
+			delimiter_ = delimiter;
+		}
+
+	private:
+		ByteArray<Alloc> value_;
+
+		StringNotation notation_;
+		ByteArray<Alloc> delimiter_;
+	};
+
+} // detail
+} // eclog
+} // vallest
+
+namespace vallest {
+namespace eclog {
+namespace detail {
+
+	class NumberNodeImpl : public NumberNode, private NonCopyable {
+	public:
+		explicit NumberNodeImpl(const ValueDesc& desc) :
+			value_(desc.number()),
+			fracDigits_(desc.fracDigits())
+		{
+		}
+
+		explicit NumberNodeImpl(const NumberNode& other)
+		{
+			assign(other);
+		}
+
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_number;
+		}
+
+		virtual Number value() const ECLOG_OVERRIDE
+		{
+			return value_;
+		}
+
+		virtual void setFracDigits(int fracDigits) ECLOG_OVERRIDE
+		{
+			fracDigits_ = fracDigits;
+		}
+
+		virtual int fracDigits() const ECLOG_OVERRIDE
+		{
+			return fracDigits_;
+		}
+
+		virtual void assign(const NumberDesc& desc) ECLOG_OVERRIDE
+		{
+			value_ = desc.number();
+			fracDigits_ = desc.fracDigits();
+		}
+
+		virtual void assign(const NumberNode& other) ECLOG_OVERRIDE
+		{
+			if (&other == this) {
+				return;
+			}
+
+			value_ = other.value();
+			fracDigits_ = other.fracDigits();
+		}
+
+	private:
+		Number value_;
+
+		int fracDigits_;
+	};
+
+} // detail
+} // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
-
-		template<typename T, typename Alloc>
-		class Vector {
-		public:
-			Vector() : size_(0), capacity_(0), v_(0)
-			{
-			}
-
-			Vector(const Vector& other) : size_(0), capacity_(0), v_(0)
-			{
-				assign(other);
-			}
-
-			~Vector()
-			{
-				reset(0, 0, 0);
-			}
-
-			Vector& operator=(const Vector& other)
-			{
-				if (this != &other) {
-					assign(other);
-				}
-
-				return *this;
-			}
-
-			bool empty() const
-			{
-				return size_ == 0;
-			}
-
-			size_t size() const
-			{
-				return size_;
-			}
-
-			size_t maxSize() const
-			{
-				return maxValue<size_t>() / sizeof(T);
-			}
-
-			size_t capacity() const
-			{
-				return capacity_;
-			}
-
-			void reserve(size_t capacity)
-			{
-				if (capacity > maxSize()) {
-					ECLOG_FAULT(LengthError);
-				}
-
-				if (capacity > capacity_) {
-					reset(makeCopy(capacity), size_, capacity);
-				}
-			}
-
-			size_t indexOf(const T& value) const
-			{
-				return &value - v_;
-			}
-
-			T& operator[](size_t index)
-			{
-				ECLOG_ASSERT(index < size_);
-				return v_[index];
-			}
-
-			const T& operator[](size_t index) const
-			{
-				ECLOG_ASSERT(index < size_);
-				return v_[index];
-			}
-
-			T& front()
-			{
-				ECLOG_ASSERT(size_ > 0);
-				return v_[0];
-			}
-
-			const T& front() const
-			{
-				ECLOG_ASSERT(size_ > 0);
-				return v_[0];
-			}
-
-			T& back()
-			{
-				ECLOG_ASSERT(size_ > 0);
-				return v_[size_ - 1];
-			}
-
-			const T& back() const
-			{
-				ECLOG_ASSERT(size_ > 0);
-				return v_[size_ - 1];
-			}
-
-			T* data()
-			{
-				return v_;
-			}
-
-			const T* data() const
-			{
-				return v_;
-			}
-
-			void clear()
-			{
-				destructRange(v_, v_ + size_);
-
-				size_ = 0;
-			}
-
-			void insert(size_t index, const T& value)
-			{
-				pushBack(value);
-
-				if (index < size_) {
-					rotate(v_ + index, v_ + (size_ - 1), v_ + size_);
-				}
-			}
-
-			void pushBack(const T& value)
-			{
-				if (size_ == maxSize()) {
-					ECLOG_FAULT(LengthError);
-				}
-
-				if (size_ < capacity_)
-				{
-					construct<T>(v_ + size_, value);
-
-					size_ += 1;
-				}
-				else
-				{
-					size_t capacity = growTo(size_ + 1);
-
-					T* v = makeCopy(capacity);
-
-					ECLOG_TRY
-					{
-						construct<T>(v + size_, value);
-					}
-					ECLOG_CATCH_ALL
-					{
-						reset(v, size_, capacity);
-						ECLOG_RETHROW;
-					}
-
-					reset(v, size_ + 1, capacity);
-				}
-			}
-
-			void popBack()
-			{
-				ECLOG_ASSERT(size_ > 0);
-
-				destruct<T>(v_ + (size_ - 1));
-
-				size_ -= 1;
-			}
-
-			void remove(size_t index, size_t count = 1)
-			{
-				if (index < size_ && count > 0)
-				{
-					if (count > size_ - index) {
-						count = size_ - index;
-					}
-
-					copy(v_ + index + count, v_ + size_, v_ + index);
-
-					destructRange(v_ + size_ - count, v_ + size_);
-
-					size_ -= count;
-				}
-			}
-
-			void swap(Vector& other)
-			{
-				detail::swap(size_, other.size_);
-				detail::swap(capacity_, other.capacity_);
-				detail::swap(v_, other.v_);
-			}
-
-		private:
-			void destroyAll()
-			{
-				destructRange(v_, v_ + size_);
-
-				Alloc::deallocate(v_);
-			}
-
-			void reset(T* v, size_t size, size_t capacity)
-			{
-				destroyAll();
-
-				size_ = size;
-				capacity_ = capacity;
-				v_ = v;
-			}
-
-			T* makeCopy(size_t size) const
-			{
-				if (size > maxSize()) {
-					ECLOG_FAULT(LengthError);
-				}
-
-				T* v = (T*)Alloc::allocate(sizeof(T) * size);
-
-				if (v_)
-				{
-					ECLOG_TRY
-					{
-						constructN<T>(v, min(size_, size), v_);
-					}
-					ECLOG_CATCH_ALL
-					{
-						Alloc::deallocate(v);
-						ECLOG_RETHROW;
-					}
-				}
-
-				return v;
-			}
-
-			size_t growTo(size_t size) const
-			{
-				size_t capacity = maxSize() - capacity_ / 2 < capacity_ ?
-					0 : capacity_ + capacity_ / 2;
-
-				return max(capacity, size);
-			}
-
-			void assign(const Vector& other)
-			{
-				if (other.size_ == 0)
-				{
-					clear();
-				}
-				else if (capacity_ >= other.size_)
-				{
-					copy(other.v_, other.v_ + min(size_, other.size_), v_);
-
-					if (other.size_ > size_) {
-						constructN<T>(v_ + size_, other.size_ - size_, other.v_ + size_);
-					}
-					else if (other.size_ < size_) {
-						destructRange(v_ + other.size_, v_ + size_);
-					}
-
-					size_ = other.size_;
-				}
-				else
-				{
-					reset(other.makeCopy(other.size_), other.size_, other.size_);
-				}
-			}
-
-		private:
-			size_t size_;
-			size_t capacity_;
-			T* v_;
-		};
-
-		template<typename T, typename Alloc>
-		inline void swap(Vector<T, Alloc>& a, Vector<T, Alloc>& b)
+	template<typename T, typename Alloc>
+	class Vector {
+	public:
+		Vector() : size_(0), capacity_(0), v_(0)
 		{
-			a.swap(b);
 		}
 
-	} // detail
+		Vector(const Vector& other) : size_(0), capacity_(0), v_(0)
+		{
+			assign(other);
+		}
 
-} // eclog
+		~Vector()
+		{
+			reset(0, 0, 0);
+		}
 
-namespace eclog {
-
-	namespace detail {
-
-		template<typename Factory>
-		class ArrayNodeImpl : public ArrayNode, private NonCopyable {
-		private:
-			class Element : public ArrayNode::Element {
-			public:
-				Element() : value_(0)
-				{
-				}
-
-				explicit Element(ValueNode* value) : value_(value)
-				{
-				}
-
-			public:
-				virtual ValueNode& value() ECLOG_OVERRIDE
-				{
-					if (!value_) {
-						ECLOG_FAULT(OutOfRange);
-					}
-
-					return *value_;
-				}
-
-				virtual const ValueNode& value() const ECLOG_OVERRIDE
-				{
-					if (!value_) {
-						ECLOG_FAULT(OutOfRange);
-					}
-
-					return *value_;
-				}
-
-				virtual void updateValue(const ValueNode& value) ECLOG_OVERRIDE
-				{
-					ValueNode* p = Factory::create(value);
-
-					Factory::destroy(value_);
-
-					value_ = p;
-				}
-
-				virtual void updateValue(const eclog::ValueDesc& desc) ECLOG_OVERRIDE
-				{
-					ValueNode* p = Factory::create(desc);
-
-					Factory::destroy(value_);
-
-					value_ = p;
-				}
-
-				virtual Element* prev(ptrdiff_t n = 1) ECLOG_OVERRIDE
-				{
-					return this - n;
-				}
-
-				virtual const Element* prev(ptrdiff_t n = 1) const ECLOG_OVERRIDE
-				{
-					return this - n;
-				}
-
-				virtual Element* next(ptrdiff_t n = 1) ECLOG_OVERRIDE
-				{
-					return this + n;
-				}
-
-				virtual const Element* next(ptrdiff_t n = 1) const ECLOG_OVERRIDE
-				{
-					return this + n;
-				}
-
-				virtual ptrdiff_t distance(const ArrayNode::Element* other) const ECLOG_OVERRIDE
-				{
-					return (Element*)other - this;
-				}
-
-			private:
-				ValueNode* value_;
-			};
-
-			typedef typename Factory::AllocType Alloc;
-
-		public:
-			ArrayNodeImpl()
-			{
-				v_.pushBack(Element());
-			}
-
-			explicit ArrayNodeImpl(const ValueDesc& desc)
-			{
-				v_.pushBack(Element());
-
-				assign((const ArrayDesc&)desc);
-			}
-
-			explicit ArrayNodeImpl(const ArrayNode& other)
-			{
-				v_.pushBack(Element());
-
+		Vector& operator=(const Vector& other)
+		{
+			if (this != &other) {
 				assign(other);
 			}
 
-			~ArrayNodeImpl()
-			{
-				remove(0, size());
+			return *this;
+		}
+
+		bool empty() const
+		{
+			return size_ == 0;
+		}
+
+		size_t size() const
+		{
+			return size_;
+		}
+
+		size_t maxSize() const
+		{
+			return maxValue<size_t>() / sizeof(T);
+		}
+
+		size_t capacity() const
+		{
+			return capacity_;
+		}
+
+		void reserve(size_t capacity)
+		{
+			if (capacity > maxSize()) {
+				ECLOG_FAULT(LengthError);
 			}
 
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_array;
+			if (capacity > capacity_) {
+				reset(makeCopy(capacity), size_, capacity);
+			}
+		}
+
+		size_t indexOf(const T& value) const
+		{
+			return &value - v_;
+		}
+
+		T& operator[](size_t index)
+		{
+			ECLOG_ASSERT(index < size_);
+			return v_[index];
+		}
+
+		const T& operator[](size_t index) const
+		{
+			ECLOG_ASSERT(index < size_);
+			return v_[index];
+		}
+
+		T& front()
+		{
+			ECLOG_ASSERT(size_ > 0);
+			return v_[0];
+		}
+
+		const T& front() const
+		{
+			ECLOG_ASSERT(size_ > 0);
+			return v_[0];
+		}
+
+		T& back()
+		{
+			ECLOG_ASSERT(size_ > 0);
+			return v_[size_ - 1];
+		}
+
+		const T& back() const
+		{
+			ECLOG_ASSERT(size_ > 0);
+			return v_[size_ - 1];
+		}
+
+		T* data()
+		{
+			return v_;
+		}
+
+		const T* data() const
+		{
+			return v_;
+		}
+
+		void clear()
+		{
+			destructRange(v_, v_ + size_);
+
+			size_ = 0;
+		}
+
+		void insert(size_t index, const T& value)
+		{
+			pushBack(value);
+
+			if (index < size_) {
+				rotate(v_ + index, v_ + (size_ - 1), v_ + size_);
+			}
+		}
+
+		void pushBack(const T& value)
+		{
+			if (size_ == maxSize()) {
+				ECLOG_FAULT(LengthError);
 			}
 
-			virtual void clear() ECLOG_OVERRIDE
+			if (size_ < capacity_)
 			{
-				remove(0, size());
+				construct<T>(v_ + size_, value);
+
+				size_ += 1;
 			}
-
-			virtual bool empty() const ECLOG_OVERRIDE
+			else
 			{
-				return size() == 0;
-			}
+				size_t capacity = growTo(size_ + 1);
 
-			virtual size_t size() const ECLOG_OVERRIDE
-			{
-				return v_.size() - 1;
-			}
+				T* v = makeCopy(capacity);
 
-			virtual Iterator begin() ECLOG_OVERRIDE
-			{
-				return v_.data();
-			}
-
-			virtual Iterator end() ECLOG_OVERRIDE
-			{
-				return v_.data() + size();
-			}
-
-			virtual ConstIterator begin() const ECLOG_OVERRIDE
-			{
-				return v_.data();
-			}
-
-			virtual ConstIterator end() const ECLOG_OVERRIDE
-			{
-				return v_.data() + size();
-			}
-
-			virtual size_t indexOf(const ArrayNode::Element& element) const ECLOG_OVERRIDE
-			{
-				return v_.indexOf((const Element&)element);
-			}
-
-			virtual ArrayNode::Element& at(size_t index) ECLOG_OVERRIDE
-			{
-				if (index >= size()) {
-					ECLOG_FAULT(OutOfRange);
-				}
-
-				return v_[index];
-			}
-
-			virtual const ArrayNode::Element& at(size_t index) const ECLOG_OVERRIDE
-			{
-				if (index >= size()) {
-					ECLOG_FAULT(OutOfRange);
-				}
-
-				return v_[index];
-			}
-
-			virtual Iterator insert(Iterator pos, const ArrayNode::Element& element) ECLOG_OVERRIDE
-			{
-				return insert(pos.get(), element.value());
-			}
-
-			virtual Iterator insert(Iterator pos, const ValueNode& value) ECLOG_OVERRIDE
-			{
-				return insert(pos.get(), value);
-			}
-
-			virtual Iterator insert(Iterator pos, const eclog::ValueDesc& value) ECLOG_OVERRIDE
-			{
-				return insert(pos.get(), value);
-			}
-
-			virtual void remove(Iterator pos) ECLOG_OVERRIDE
-			{
-				remove(indexOf(*pos), 1);
-			}
-
-			virtual void remove(Iterator first, Iterator last) ECLOG_OVERRIDE
-			{
-				size_t firstIndex = indexOf(*first);
-				size_t lastIndex = indexOf(*last);
-				size_t count = lastIndex - firstIndex;
-
-				remove(firstIndex, count);
-			}
-
-			virtual void remove(size_t index) ECLOG_OVERRIDE
-			{
-				remove(index, 1);
-			}
-
-			virtual void remove(size_t index, size_t count) ECLOG_OVERRIDE
-			{
-				if (index < size() && count > 0)
+				ECLOG_TRY
 				{
-					if (count > size() - index) {
-						count = size() - index;
-					}
-
-					for (size_t i = index; i < index + count; ++i) {
-						Factory::destroy(&v_[i].value());
-					}
-
-					v_.remove(index, count);
+					construct<T>(v + size_, value);
 				}
-			}
-
-			virtual void assign(const ArrayDesc& desc) ECLOG_OVERRIDE
-			{
-				ArrayNodeImpl t;
-
-				for (size_t i = 0; i < desc.arraySize(); ++i)
+				ECLOG_CATCH_ALL
 				{
-					t.insert(t.end(), desc.array()[i]);
+					reset(v, size_, capacity);
+					ECLOG_RETHROW;
 				}
 
-				detail::swap(v_, t.v_);
+				reset(v, size_ + 1, capacity);
+			}
+		}
+
+		void popBack()
+		{
+			ECLOG_ASSERT(size_ > 0);
+
+			destruct<T>(v_ + (size_ - 1));
+
+			size_ -= 1;
+		}
+
+		void remove(size_t index, size_t count = 1)
+		{
+			if (index < size_ && count > 0)
+			{
+				if (count > size_ - index) {
+					count = size_ - index;
+				}
+
+				copy(v_ + index + count, v_ + size_, v_ + index);
+
+				destructRange(v_ + size_ - count, v_ + size_);
+
+				size_ -= count;
+			}
+		}
+
+		void swap(Vector& other)
+		{
+			detail::swap(size_, other.size_);
+			detail::swap(capacity_, other.capacity_);
+			detail::swap(v_, other.v_);
+		}
+
+	private:
+		void destroyAll()
+		{
+			destructRange(v_, v_ + size_);
+
+			Alloc::deallocate(v_);
+		}
+
+		void reset(T* v, size_t size, size_t capacity)
+		{
+			destroyAll();
+
+			size_ = size;
+			capacity_ = capacity;
+			v_ = v;
+		}
+
+		T* makeCopy(size_t size) const
+		{
+			if (size > maxSize()) {
+				ECLOG_FAULT(LengthError);
 			}
 
-			virtual void assign(const ArrayNode& other) ECLOG_OVERRIDE
+			T* v = (T*)Alloc::allocate(sizeof(T) * size);
+
+			if (v_)
 			{
-				if (&other == this) {
-					return;
-				}
-
-				ArrayNodeImpl t;
-
-				for (ArrayNode::ConstIterator it = other.begin(); it != other.end(); ++it)
+				ECLOG_TRY
 				{
-					t.insert(t.end(), it->value());
+					constructN<T>(v, min(size_, size), v_);
+				}
+				ECLOG_CATCH_ALL
+				{
+					Alloc::deallocate(v);
+					ECLOG_RETHROW;
+				}
+			}
+
+			return v;
+		}
+
+		size_t growTo(size_t size) const
+		{
+			size_t capacity = maxSize() - capacity_ / 2 < capacity_ ?
+				0 : capacity_ + capacity_ / 2;
+
+			return max(capacity, size);
+		}
+
+		void assign(const Vector& other)
+		{
+			if (other.size_ == 0)
+			{
+				clear();
+			}
+			else if (capacity_ >= other.size_)
+			{
+				copy(other.v_, other.v_ + min(size_, other.size_), v_);
+
+				if (other.size_ > size_) {
+					constructN<T>(v_ + size_, other.size_ - size_, other.v_ + size_);
+				}
+				else if (other.size_ < size_) {
+					destructRange(v_ + other.size_, v_ + size_);
 				}
 
-				detail::swap(v_, t.v_);
+				size_ = other.size_;
 			}
-
-		private:
-			template<typename V>
-			ArrayNode::Element* insert(ArrayNode::Element* pos, const V& valueArg)
+			else
 			{
-				NodePtr<ValueNode, Factory> value(Factory::create(valueArg));
-
-				size_t index = indexOf(*pos);
-
-				v_.insert(index, Element(value.get()));
-
-				value.release();
-
-				return v_.data() + index;
+				reset(other.makeCopy(other.size_), other.size_, other.size_);
 			}
+		}
 
-		private:
-			Vector<Element, Alloc> v_;
-		};
+	private:
+		size_t size_;
+		size_t capacity_;
+		T* v_;
+	};
 
-	} // detail
+	template<typename T, typename Alloc>
+	inline void swap(Vector<T, Alloc>& a, Vector<T, Alloc>& b)
+	{
+		a.swap(b);
+	}
 
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
-
-		template<typename Alloc>
-		class NodeFactory {
+	template<typename Factory>
+	class ArrayNodeImpl : public ArrayNode, private NonCopyable {
+	private:
+		class Element : public ArrayNode::Element {
 		public:
-			typedef Alloc AllocType;
+			Element() : value_(0)
+			{
+			}
+
+			explicit Element(ValueNode* value) : value_(value)
+			{
+			}
+
+		public:
+			virtual ValueNode& value() ECLOG_OVERRIDE
+			{
+				if (!value_) {
+					ECLOG_FAULT(OutOfRange);
+				}
+
+				return *value_;
+			}
+
+			virtual const ValueNode& value() const ECLOG_OVERRIDE
+			{
+				if (!value_) {
+					ECLOG_FAULT(OutOfRange);
+				}
+
+				return *value_;
+			}
+
+			virtual void updateValue(const ValueNode& value) ECLOG_OVERRIDE
+			{
+				ValueNode* p = Factory::create(value);
+
+				Factory::destroy(value_);
+
+				value_ = p;
+			}
+
+			virtual void updateValue(const ValueDesc& desc) ECLOG_OVERRIDE
+			{
+				ValueNode* p = Factory::create(desc);
+
+				Factory::destroy(value_);
+
+				value_ = p;
+			}
+
+			virtual Element* prev(ptrdiff_t n = 1) ECLOG_OVERRIDE
+			{
+				return this - n;
+			}
+
+			virtual const Element* prev(ptrdiff_t n = 1) const ECLOG_OVERRIDE
+			{
+				return this - n;
+			}
+
+			virtual Element* next(ptrdiff_t n = 1) ECLOG_OVERRIDE
+			{
+				return this + n;
+			}
+
+			virtual const Element* next(ptrdiff_t n = 1) const ECLOG_OVERRIDE
+			{
+				return this + n;
+			}
+
+			virtual ptrdiff_t distance(const ArrayNode::Element* other) const ECLOG_OVERRIDE
+			{
+				return (Element*)other - this;
+			}
 
 		private:
-			typedef KeyNodeImpl<Alloc> KeyNodeType;
-			typedef NullNodeImpl NullNodeType;
-			typedef BooleanNodeImpl BooleanNodeType;
-			typedef StringNodeImpl<Alloc> StringNodeType;
-			typedef NumberNodeImpl NumberNodeType;
-			typedef ObjectNodeImpl<NodeFactory> ObjectNodeType;
-			typedef ArrayNodeImpl<NodeFactory> ArrayNodeType;
-
-		public:
-			static KeyNode* create(const KeyNode& key)
-			{
-				return detail::create<KeyNodeType, Alloc>(key);
-			}
-
-			static KeyNode* create(const eclog::KeyDesc& key)
-			{
-				return detail::create<KeyNodeType, Alloc>(key);
-			}
-
-			static ValueNode* create(const ValueNode& value)
-			{
-				switch (value.nodeType())
-				{
-				case node_type_null:
-					return detail::create<NullNodeType, Alloc>();
-
-				case node_type_boolean:
-					return detail::create<BooleanNodeType, Alloc>((const BooleanNode&)value);
-
-				case node_type_string:
-					return detail::create<StringNodeType, Alloc>((const StringNode&)value);
-
-				case node_type_number:
-					return detail::create<NumberNodeType, Alloc>((const NumberNode&)value);
-
-				case node_type_object:
-					return detail::create<ObjectNodeType, Alloc>((const ObjectNode&)value);
-
-				case node_type_array:
-					return detail::create<ArrayNodeType, Alloc>((const ArrayNode&)value);
-
-				default:
-					ECLOG_ASSERT(false);
-					return 0;
-				}
-			}
-
-			static ValueNode* create(const ValueDesc& desc)
-			{
-				switch (desc.type())
-				{
-				case value_type_null:
-					return detail::create<NullNodeType, Alloc>();
-
-				case value_type_boolean:
-					return detail::create<BooleanNodeType, Alloc>(desc);
-
-				case value_type_string:
-					return detail::create<StringNodeType, Alloc>(desc);
-
-				case value_type_number:
-					return detail::create<NumberNodeType, Alloc>(desc);
-
-				case value_type_object:
-					return detail::create<ObjectNodeType, Alloc>(desc);
-
-				case value_type_array:
-					return detail::create<ArrayNodeType, Alloc>(desc);
-
-				default:
-					ECLOG_ASSERT(false);
-					return 0;
-				}
-			}
-
-			static void destroy(Node* ptr)
-			{
-				switch (ptr->nodeType())
-				{
-				case node_type_key:
-					detail::destroy<KeyNodeType, Alloc>((KeyNodeType*)ptr);
-					break;
-
-				case node_type_null:
-					detail::destroy<NullNodeType, Alloc>((NullNodeType*)ptr);
-					break;
-
-				case node_type_boolean:
-					detail::destroy<BooleanNodeType, Alloc>((BooleanNodeType*)ptr);
-					break;
-
-				case node_type_string:
-					detail::destroy<StringNodeType, Alloc>((StringNodeType*)ptr);
-					break;
-
-				case node_type_number:
-					detail::destroy<NumberNodeType, Alloc>((NumberNodeType*)ptr);
-					break;
-
-				case node_type_object:
-					detail::destroy<ObjectNodeType, Alloc>((ObjectNodeType*)ptr);
-					break;
-
-				case node_type_array:
-					detail::destroy<ArrayNodeType, Alloc>((ArrayNodeType*)ptr);
-					break;
-
-				default:
-					ECLOG_ASSERT(false);
-					break;
-				}
-			}
+			ValueNode* value_;
 		};
 
-	} // detail
+		typedef typename Factory::AllocType Alloc;
 
+	public:
+		ArrayNodeImpl()
+		{
+			v_.pushBack(Element());
+		}
+
+		explicit ArrayNodeImpl(const ValueDesc& desc)
+		{
+			v_.pushBack(Element());
+
+			assign((const ArrayDesc&)desc);
+		}
+
+		explicit ArrayNodeImpl(const ArrayNode& other)
+		{
+			v_.pushBack(Element());
+
+			assign(other);
+		}
+
+		~ArrayNodeImpl()
+		{
+			remove(0, size());
+		}
+
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_array;
+		}
+
+		virtual void clear() ECLOG_OVERRIDE
+		{
+			remove(0, size());
+		}
+
+		virtual bool empty() const ECLOG_OVERRIDE
+		{
+			return size() == 0;
+		}
+
+		virtual size_t size() const ECLOG_OVERRIDE
+		{
+			return v_.size() - 1;
+		}
+
+		virtual Iterator begin() ECLOG_OVERRIDE
+		{
+			return v_.data();
+		}
+
+		virtual Iterator end() ECLOG_OVERRIDE
+		{
+			return v_.data() + size();
+		}
+
+		virtual ConstIterator begin() const ECLOG_OVERRIDE
+		{
+			return v_.data();
+		}
+
+		virtual ConstIterator end() const ECLOG_OVERRIDE
+		{
+			return v_.data() + size();
+		}
+
+		virtual size_t indexOf(const ArrayNode::Element& element) const ECLOG_OVERRIDE
+		{
+			return v_.indexOf((const Element&)element);
+		}
+
+		virtual ArrayNode::Element& at(size_t index) ECLOG_OVERRIDE
+		{
+			if (index >= size()) {
+				ECLOG_FAULT(OutOfRange);
+			}
+
+			return v_[index];
+		}
+
+		virtual const ArrayNode::Element& at(size_t index) const ECLOG_OVERRIDE
+		{
+			if (index >= size()) {
+				ECLOG_FAULT(OutOfRange);
+			}
+
+			return v_[index];
+		}
+
+		virtual Iterator insert(Iterator pos, const ArrayNode::Element& element) ECLOG_OVERRIDE
+		{
+			return insert(pos.get(), element.value());
+		}
+
+		virtual Iterator insert(Iterator pos, const ValueNode& value) ECLOG_OVERRIDE
+		{
+			return insert(pos.get(), value);
+		}
+
+		virtual Iterator insert(Iterator pos, const ValueDesc& value) ECLOG_OVERRIDE
+		{
+			return insert(pos.get(), value);
+		}
+
+		virtual void remove(Iterator pos) ECLOG_OVERRIDE
+		{
+			remove(indexOf(*pos), 1);
+		}
+
+		virtual void remove(Iterator first, Iterator last) ECLOG_OVERRIDE
+		{
+			size_t firstIndex = indexOf(*first);
+			size_t lastIndex = indexOf(*last);
+			size_t count = lastIndex - firstIndex;
+
+			remove(firstIndex, count);
+		}
+
+		virtual void remove(size_t index) ECLOG_OVERRIDE
+		{
+			remove(index, 1);
+		}
+
+		virtual void remove(size_t index, size_t count) ECLOG_OVERRIDE
+		{
+			if (index < size() && count > 0)
+			{
+				if (count > size() - index) {
+					count = size() - index;
+				}
+
+				for (size_t i = index; i < index + count; ++i) {
+					Factory::destroy(&v_[i].value());
+				}
+
+				v_.remove(index, count);
+			}
+		}
+
+		virtual void assign(const ArrayDesc& desc) ECLOG_OVERRIDE
+		{
+			ArrayNodeImpl t;
+
+			for (size_t i = 0; i < desc.arraySize(); ++i)
+			{
+				t.insert(t.end(), desc.array()[i]);
+			}
+
+			detail::swap(v_, t.v_);
+		}
+
+		virtual void assign(const ArrayNode& other) ECLOG_OVERRIDE
+		{
+			if (&other == this) {
+				return;
+			}
+
+			ArrayNodeImpl t;
+
+			for (ArrayNode::ConstIterator it = other.begin(); it != other.end(); ++it)
+			{
+				t.insert(t.end(), it->value());
+			}
+
+			detail::swap(v_, t.v_);
+		}
+
+	private:
+		template<typename V>
+		ArrayNode::Element* insert(ArrayNode::Element* pos, const V& valueArg)
+		{
+			NodePtr<ValueNode, Factory> value(Factory::create(valueArg));
+
+			size_t index = indexOf(*pos);
+
+			v_.insert(index, Element(value.get()));
+
+			value.release();
+
+			return v_.data() + index;
+		}
+
+	private:
+		Vector<Element, Alloc> v_;
+	};
+
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
+namespace eclog {
+namespace detail {
+
+	template<typename Alloc>
+	class NodeFactory {
+	public:
+		typedef Alloc AllocType;
+
+	private:
+		typedef KeyNodeImpl<Alloc> KeyNodeType;
+		typedef NullNodeImpl NullNodeType;
+		typedef BooleanNodeImpl BooleanNodeType;
+		typedef StringNodeImpl<Alloc> StringNodeType;
+		typedef NumberNodeImpl NumberNodeType;
+		typedef ObjectNodeImpl<NodeFactory> ObjectNodeType;
+		typedef ArrayNodeImpl<NodeFactory> ArrayNodeType;
+
+	public:
+		static KeyNode* create(const KeyNode& key)
+		{
+			return detail::create<KeyNodeType, Alloc>(key);
+		}
+
+		static KeyNode* create(const KeyDesc& key)
+		{
+			return detail::create<KeyNodeType, Alloc>(key);
+		}
+
+		static ValueNode* create(const ValueNode& value)
+		{
+			switch (value.nodeType())
+			{
+			case node_type_null:
+				return detail::create<NullNodeType, Alloc>();
+
+			case node_type_boolean:
+				return detail::create<BooleanNodeType, Alloc>((const BooleanNode&)value);
+
+			case node_type_string:
+				return detail::create<StringNodeType, Alloc>((const StringNode&)value);
+
+			case node_type_number:
+				return detail::create<NumberNodeType, Alloc>((const NumberNode&)value);
+
+			case node_type_object:
+				return detail::create<ObjectNodeType, Alloc>((const ObjectNode&)value);
+
+			case node_type_array:
+				return detail::create<ArrayNodeType, Alloc>((const ArrayNode&)value);
+
+			default:
+				ECLOG_ASSERT(false);
+				return 0;
+			}
+		}
+
+		static ValueNode* create(const ValueDesc& desc)
+		{
+			switch (desc.type())
+			{
+			case value_type_null:
+				return detail::create<NullNodeType, Alloc>();
+
+			case value_type_boolean:
+				return detail::create<BooleanNodeType, Alloc>(desc);
+
+			case value_type_string:
+				return detail::create<StringNodeType, Alloc>(desc);
+
+			case value_type_number:
+				return detail::create<NumberNodeType, Alloc>(desc);
+
+			case value_type_object:
+				return detail::create<ObjectNodeType, Alloc>(desc);
+
+			case value_type_array:
+				return detail::create<ArrayNodeType, Alloc>(desc);
+
+			default:
+				ECLOG_ASSERT(false);
+				return 0;
+			}
+		}
+
+		static void destroy(Node* ptr)
+		{
+			switch (ptr->nodeType())
+			{
+			case node_type_key:
+				detail::destroy<KeyNodeType, Alloc>((KeyNodeType*)ptr);
+				break;
+
+			case node_type_null:
+				detail::destroy<NullNodeType, Alloc>((NullNodeType*)ptr);
+				break;
+
+			case node_type_boolean:
+				detail::destroy<BooleanNodeType, Alloc>((BooleanNodeType*)ptr);
+				break;
+
+			case node_type_string:
+				detail::destroy<StringNodeType, Alloc>((StringNodeType*)ptr);
+				break;
+
+			case node_type_number:
+				detail::destroy<NumberNodeType, Alloc>((NumberNodeType*)ptr);
+				break;
+
+			case node_type_object:
+				detail::destroy<ObjectNodeType, Alloc>((ObjectNodeType*)ptr);
+				break;
+
+			case node_type_array:
+				detail::destroy<ArrayNodeType, Alloc>((ArrayNodeType*)ptr);
+				break;
+
+			default:
+				ECLOG_ASSERT(false);
+				break;
+			}
+		}
+	};
+
+} // detail
+} // eclog
+} // vallest
+
+namespace vallest {
 namespace eclog {
 
 	template<typename Alloc>
@@ -10904,7 +11005,7 @@ namespace eclog {
 			return impl_.insert(pos, key, value);
 		}
 
-		virtual Pair<Iterator, bool> insert(Iterator pos, const eclog::KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
+		virtual Pair<Iterator, bool> insert(Iterator pos, const KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
 		{
 			return impl_.insert(pos, key, value);
 		}
@@ -10929,7 +11030,7 @@ namespace eclog {
 			return impl_.insertForce(pos, key, value);
 		}
 
-		virtual Iterator insertForce(Iterator pos, const eclog::KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
+		virtual Iterator insertForce(Iterator pos, const KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
 		{
 			return impl_.insertForce(pos, key, value);
 		}
@@ -10939,7 +11040,7 @@ namespace eclog {
 			return impl_.insertForce(pos, key, value);
 		}
 
-		virtual Iterator insertForce(Iterator pos, const eclog::KeyDesc& key, const ValueDesc& value) ECLOG_OVERRIDE
+		virtual Iterator insertForce(Iterator pos, const KeyDesc& key, const ValueDesc& value) ECLOG_OVERRIDE
 		{
 			return impl_.insertForce(pos, key, value);
 		}
@@ -10969,12 +11070,12 @@ namespace eclog {
 			return impl_.remove(key);
 		}
 
-		virtual void parse(eclog::Context& ctx) ECLOG_OVERRIDE
+		virtual void parse(Context& ctx) ECLOG_OVERRIDE
 		{
 			impl_.parse(ctx);
 		}
 
-		virtual void parse(eclog::Context& ctx, ErrorCode& ec) ECLOG_OVERRIDE
+		virtual void parse(Context& ctx, ErrorCode& ec) ECLOG_OVERRIDE
 		{
 			impl_.parse(ctx, ec);
 		}
@@ -11096,6 +11197,7 @@ namespace eclog {
 	typedef BasicDocument<ECLOG_DEFAULT_ALLOCATOR> Document;
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_H_
 

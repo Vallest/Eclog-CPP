@@ -15,6 +15,7 @@
 #include <Eclog/Detail/NonCopyable.h>
 #include <Eclog/Detail/Assert.h>
 
+namespace vallest {
 namespace eclog {
 
 	template<typename Alloc>
@@ -130,6 +131,7 @@ namespace eclog {
 	typedef BasicDynamicParsingBuffer<ECLOG_DEFAULT_ALLOCATOR> DynamicParsingBuffer;
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DYNAMICPARSINGBUFFER_H_
 

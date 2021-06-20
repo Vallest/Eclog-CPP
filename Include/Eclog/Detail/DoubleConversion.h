@@ -5,16 +5,16 @@
 #ifndef ECLOG_CPP_DETAIL_DOUBLECONVERSION_H_
 #define ECLOG_CPP_DETAIL_DOUBLECONVERSION_H_
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	double stringToDouble(const char* str, const char** outStr = 0, int* outError = 0);
+	void doubleToString(double d, char* buffer, int fracDigits = -1);
 
-		double stringToDouble(const char* str, const char** outStr = 0, int* outError = 0);
-		void doubleToString(double d, char* buffer, int fracDigits = -1);
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_DOUBLECONVERSION_H_
 

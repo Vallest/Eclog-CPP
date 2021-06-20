@@ -16,6 +16,8 @@
 
 #include <time.h>
 
+using namespace vallest;
+
 namespace {
 
 	class RandomCodepointGenerator {

@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <vector>
 
+using namespace vallest;
+
 TEST_CASE("PODArray")
 {
 	SUBCASE("Push Back")

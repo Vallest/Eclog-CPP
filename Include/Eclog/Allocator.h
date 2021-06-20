@@ -10,9 +10,10 @@
 #include <stdlib.h> // malloc
 
 #ifndef ECLOG_DEFAULT_ALLOCATOR
-	#define ECLOG_DEFAULT_ALLOCATOR eclog::Allocator
+	#define ECLOG_DEFAULT_ALLOCATOR vallest::eclog::Allocator
 #endif
 
+namespace vallest {
 namespace eclog {
 
 	class Allocator {
@@ -35,6 +36,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_ALLOCATOR_H_
 

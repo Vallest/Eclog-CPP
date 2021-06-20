@@ -9,6 +9,7 @@
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
 
 	class ParsingBuffer {
@@ -29,6 +30,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_PARSINGBUFFER_H_
 

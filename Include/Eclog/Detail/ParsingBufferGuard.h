@@ -9,55 +9,55 @@
 #include <Eclog/Detail/InlineStack.h>
 #include <Eclog/Detail/NonCopyable.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<size_t MaxSize>
+	class ParsingBufferGuard : private NonCopyable {
+	public:
+		explicit ParsingBufferGuard(ParsingBuffer& parsingBuffer) :
+			parsingBuffer_(parsingBuffer)
+		{
+		}
 
-		template<size_t MaxSize>
-		class ParsingBufferGuard : private NonCopyable {
-		public:
-			explicit ParsingBufferGuard(ParsingBuffer& parsingBuffer) :
-				parsingBuffer_(parsingBuffer)
-			{
+		~ParsingBufferGuard()
+		{
+			clear();
+		}
+
+		void clear()
+		{
+			while (ptrs_.size()) {
+				pop();
 			}
+		}
 
-			~ParsingBufferGuard()
-			{
-				clear();
-			}
+		void push()
+		{
+			void* ptr = parsingBuffer_.claim();
 
-			void clear()
-			{
-				while (ptrs_.size()) {
-					pop();
-				}
-			}
+			ptrs_.push(ptr);
+		}
 
-			void push()
-			{
-				void* ptr = parsingBuffer_.claim();
+		void pop()
+		{
+			void* ptr = ptrs_.top();
 
-				ptrs_.push(ptr);
-			}
+			parsingBuffer_.discard(ptr);
 
-			void pop()
-			{
-				void* ptr = ptrs_.top();
+			ptrs_.pop();
+		}
 
-				parsingBuffer_.discard(ptr);
+	private:
+		ParsingBuffer& parsingBuffer_;
 
-				ptrs_.pop();
-			}
+		InlineStack<void*, MaxSize> ptrs_;
+	};
 
-		private:
-			ParsingBuffer& parsingBuffer_;
-
-			InlineStack<void*, MaxSize> ptrs_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_PARSINGBUFFERGUARD_H_
 

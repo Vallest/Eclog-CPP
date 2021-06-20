@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_NULL_H_
 #define ECLOG_CPP_NULL_H_
 
+namespace vallest {
 namespace eclog {
 
 	class Null {
@@ -23,6 +24,7 @@ namespace eclog {
 	extern Null null;
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_NULL_H_
 

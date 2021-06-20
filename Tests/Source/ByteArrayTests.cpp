@@ -7,6 +7,8 @@
 
 #include <Eclog/Detail/ByteArray.h>
 
+using namespace vallest;
+
 TEST_CASE("ByteArray")
 {
 	SUBCASE("Construct")

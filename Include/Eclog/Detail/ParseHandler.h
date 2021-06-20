@@ -9,40 +9,40 @@
 #include <Eclog/Value.h>
 #include <Eclog/Error.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class ParseHandler {
+	public:
+		virtual void onObjectBegin(ErrorCode*)
+		{
+		}
 
-		class ParseHandler {
-		public:
-			virtual void onObjectBegin(ErrorCode*)
-			{
-			}
+		virtual void onObjectEnd(ErrorCode*)
+		{
+		}
 
-			virtual void onObjectEnd(ErrorCode*)
-			{
-			}
+		virtual void onArrayBegin(ErrorCode*)
+		{
+		}
 
-			virtual void onArrayBegin(ErrorCode*)
-			{
-			}
+		virtual void onArrayEnd(ErrorCode*)
+		{
+		}
 
-			virtual void onArrayEnd(ErrorCode*)
-			{
-			}
+		virtual void onKey(const Key&, ErrorCode*)
+		{
+		}
 
-			virtual void onKey(const Key&, ErrorCode*)
-			{
-			}
+		virtual void onValue(const Value&, ErrorCode*)
+		{
+		}
+	};
 
-			virtual void onValue(const Value&, ErrorCode*)
-			{
-			}
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_PARSEHANDLER_H_
 

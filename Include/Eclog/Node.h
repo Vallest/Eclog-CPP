@@ -7,6 +7,7 @@
 
 #include <Eclog/NodeType.h>
 
+namespace vallest {
 namespace eclog {
 
 	class Node {
@@ -18,6 +19,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_NODE_H_
 

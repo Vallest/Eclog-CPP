@@ -8,6 +8,7 @@
 #include <Eclog/Detail/ObjectNodeImpl.h>
 #include <Eclog/Detail/NodeFactory.h>
 
+namespace vallest {
 namespace eclog {
 
 	template<typename Alloc>
@@ -118,7 +119,7 @@ namespace eclog {
 			return impl_.insert(pos, key, value);
 		}
 
-		virtual Pair<Iterator, bool> insert(Iterator pos, const eclog::KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
+		virtual Pair<Iterator, bool> insert(Iterator pos, const KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
 		{
 			return impl_.insert(pos, key, value);
 		}
@@ -143,7 +144,7 @@ namespace eclog {
 			return impl_.insertForce(pos, key, value);
 		}
 
-		virtual Iterator insertForce(Iterator pos, const eclog::KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
+		virtual Iterator insertForce(Iterator pos, const KeyDesc& key, const ValueNode& value) ECLOG_OVERRIDE
 		{
 			return impl_.insertForce(pos, key, value);
 		}
@@ -153,7 +154,7 @@ namespace eclog {
 			return impl_.insertForce(pos, key, value);
 		}
 
-		virtual Iterator insertForce(Iterator pos, const eclog::KeyDesc& key, const ValueDesc& value) ECLOG_OVERRIDE
+		virtual Iterator insertForce(Iterator pos, const KeyDesc& key, const ValueDesc& value) ECLOG_OVERRIDE
 		{
 			return impl_.insertForce(pos, key, value);
 		}
@@ -183,12 +184,12 @@ namespace eclog {
 			return impl_.remove(key);
 		}
 
-		virtual void parse(eclog::Context& ctx) ECLOG_OVERRIDE
+		virtual void parse(Context& ctx) ECLOG_OVERRIDE
 		{
 			impl_.parse(ctx);
 		}
 
-		virtual void parse(eclog::Context& ctx, ErrorCode& ec) ECLOG_OVERRIDE
+		virtual void parse(Context& ctx, ErrorCode& ec) ECLOG_OVERRIDE
 		{
 			impl_.parse(ctx, ec);
 		}
@@ -310,6 +311,7 @@ namespace eclog {
 	typedef BasicDocument<ECLOG_DEFAULT_ALLOCATOR> Document;
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DOCUMENT_H_
 

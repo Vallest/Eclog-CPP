@@ -12,85 +12,85 @@
 #include <Eclog/Detail/StringDelimiter.h>
 #include <Eclog/Detail/CompilerSpecific.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename Alloc>
+	class KeyNodeImpl : public KeyNode {
+	public:
+		explicit KeyNodeImpl(const KeyDesc& desc) :
+			str_(((const KeyDesc&)desc).str()),
+			notation_(((const KeyDesc&)desc).notation()),
+			delimiter_(((const KeyDesc&)desc).delimiter())
+		{
+		}
 
-		template<typename Alloc>
-		class KeyNodeImpl : public KeyNode {
-		public:
-			explicit KeyNodeImpl(const eclog::KeyDesc& desc) :
-				str_(((const KeyDesc&)desc).str()),
-				notation_(((const KeyDesc&)desc).notation()),
-				delimiter_(((const KeyDesc&)desc).delimiter())
+		explicit KeyNodeImpl(const KeyNode& other) :
+			str_(other.str()),
+			notation_(other.notation()),
+			delimiter_(other.delimiter())
+		{
+		}
+
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_key;
+		}
+
+		virtual cstring str() const ECLOG_OVERRIDE
+		{
+			return str_.str();
+		}
+
+		virtual void setNotation(StringNotation notation) ECLOG_OVERRIDE
+		{
+			notation_ = notation;
+		}
+
+		virtual StringNotation notation() const ECLOG_OVERRIDE
+		{
+			return notation_;
+		}
+
+		virtual void setDelimiter(cstring delimiter) ECLOG_OVERRIDE
+		{
+			setDelimiter(delimiter, 0);
+		}
+
+		virtual void setDelimiter(cstring delimiter, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			setDelimiter(delimiter, &ec);
+		}
+
+		virtual cstring delimiter() const ECLOG_OVERRIDE
+		{
+			return delimiter_.str();
+		}
+
+	private:
+		void setDelimiter(cstring delimiter, ErrorCode* ec)
+		{
+			if (!StringDelimiter::validate(delimiter))
 			{
+				ECLOG_ERROR(InvalidArgument);
+				return;
 			}
 
-			explicit KeyNodeImpl(const KeyNode& other) :
-				str_(other.str()),
-				notation_(other.notation()),
-				delimiter_(other.delimiter())
-			{
-			}
+			delimiter_ = delimiter;
+		}
 
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_key;
-			}
+	private:
+		ByteArray<Alloc> str_;
 
-			virtual cstring str() const ECLOG_OVERRIDE
-			{
-				return str_.str();
-			}
+		StringNotation notation_;
+		ByteArray<Alloc> delimiter_;
+	};
 
-			virtual void setNotation(StringNotation notation) ECLOG_OVERRIDE
-			{
-				notation_ = notation;
-			}
-
-			virtual StringNotation notation() const ECLOG_OVERRIDE
-			{
-				return notation_;
-			}
-
-			virtual void setDelimiter(cstring delimiter) ECLOG_OVERRIDE
-			{
-				setDelimiter(delimiter, 0);
-			}
-
-			virtual void setDelimiter(cstring delimiter, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				setDelimiter(delimiter, &ec);
-			}
-
-			virtual cstring delimiter() const ECLOG_OVERRIDE
-			{
-				return delimiter_.str();
-			}
-
-		private:
-			void setDelimiter(cstring delimiter, ErrorCode* ec)
-			{
-				if (!StringDelimiter::validate(delimiter))
-				{
-					ECLOG_ERROR(InvalidArgument);
-					return;
-				}
-
-				delimiter_ = delimiter;
-			}
-
-		private:
-			ByteArray<Alloc> str_;
-
-			StringNotation notation_;
-			ByteArray<Alloc> delimiter_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_KEYNODEIMPL_H_
 

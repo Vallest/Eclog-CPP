@@ -10,6 +10,7 @@
 #include <Eclog/cstring.h>
 #include <Eclog/StringNotation.h>
 
+namespace vallest {
 namespace eclog {
 
 	class StringNode : public ValueNode {
@@ -31,6 +32,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_STRINGNODE_H_
 

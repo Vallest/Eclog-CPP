@@ -17,6 +17,8 @@
 #include <utility>
 #include <algorithm>
 
+using namespace vallest;
+
 namespace {
 
 	typedef std::pair<void*, eclog::cstring> Stub;

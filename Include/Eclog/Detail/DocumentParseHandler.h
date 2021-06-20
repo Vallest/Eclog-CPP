@@ -17,150 +17,150 @@
 
 #include <limits.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename Alloc>
+	class DocumentParseHandler : private NonCopyable {
+	public:
+		explicit DocumentParseHandler(ObjectNode& root) : root_(root), hasKey_(false)
+		{
+		}
 
-		template<typename Alloc>
-		class DocumentParseHandler : private NonCopyable {
-		public:
-			explicit DocumentParseHandler(ObjectNode& root) : root_(root), hasKey_(false)
+	public:
+		void onObjectBegin()
+		{
+			if (hasKey_)
 			{
-			}
+				currentObject().appendForce(makeDesc(key_), empty_object);
 
-		public:
-			void onObjectBegin()
+				push(currentObject().last().value());
+
+				hasKey_ = false;
+			}
+			else if (!stack_.empty())
 			{
-				if (hasKey_)
-				{
-					currentObject().appendForce(makeDesc(key_), empty_object);
+				currentArray().append(empty_object);
 
-					push(currentObject().last().value());
-
-					hasKey_ = false;
-				}
-				else if (!stack_.empty())
-				{
-					currentArray().append(empty_object);
-
-					push(currentArray().last().value());
-				}
-				else
-				{
-					push(root_);
-				}
+				push(currentArray().last().value());
 			}
-
-			void onObjectEnd()
+			else
 			{
-				pop();
+				push(root_);
 			}
+		}
 
-			void onArrayBegin()
+		void onObjectEnd()
+		{
+			pop();
+		}
+
+		void onArrayBegin()
+		{
+			if (hasKey_)
 			{
-				if (hasKey_)
-				{
-					currentObject().appendForce(makeDesc(key_), empty_array);
+				currentObject().appendForce(makeDesc(key_), empty_array);
 
-					push(currentObject().last().value());
+				push(currentObject().last().value());
 
-					hasKey_ = false;
-				}
-				else
-				{
-					currentArray().append(empty_array);
-
-					push(currentArray().last().value());
-				}
+				hasKey_ = false;
 			}
-
-			void onArrayEnd()
+			else
 			{
-				pop();
-			}
+				currentArray().append(empty_array);
 
-			void onKey(const Key& key)
+				push(currentArray().last().value());
+			}
+		}
+
+		void onArrayEnd()
+		{
+			pop();
+		}
+
+		void onKey(const Key& key)
+		{
+			key_ = key;
+
+			hasKey_ = true;
+		}
+
+		void onValue(const Value& value)
+		{
+			if (hasKey_)
 			{
-				key_ = key;
+				currentObject().appendForce(makeDesc(key_), makeDesc(value));
 
-				hasKey_ = true;
+				hasKey_ = false;
 			}
-
-			void onValue(const Value& value)
+			else
 			{
-				if (hasKey_)
-				{
-					currentObject().appendForce(makeDesc(key_), makeDesc(value));
-
-					hasKey_ = false;
-				}
-				else
-				{
-					currentArray().append(makeDesc(value));
-				}
+				currentArray().append(makeDesc(value));
 			}
+		}
 
-		private:
-			void push(ValueNode& node)
+	private:
+		void push(ValueNode& node)
+		{
+			stack_.pushBack(&node);
+		}
+
+		void pop()
+		{
+			stack_.popBack();
+		}
+
+		ObjectNode& currentObject()
+		{
+			return *(ObjectNode*)stack_.back();
+		}
+
+		ArrayNode& currentArray()
+		{
+			return *(ArrayNode*)stack_.back();
+		}
+
+	private:
+		static KeyDesc makeDesc(const Key& key)
+		{
+			return KeyDesc(key, key.notation(), key.delimiter());
+		}
+
+		static ValueDesc makeDesc(const Value& value)
+		{
+			switch (value.type())
 			{
-				stack_.pushBack(&node);
+			case value_type_null:
+				return ValueDesc(null);
+
+			case value_type_boolean:
+				return ValueDesc(value.asBoolean());
+
+			case value_type_string:
+				return ValueDesc(value.asString(), value.stringNotation(), value.stringDelimiter());
+
+			case value_type_number:
+				return ValueDesc(value.asNumber());
+
+			default:
+				ECLOG_ASSERT(false);
+				return ValueDesc(null);
 			}
+		}
 
-			void pop()
-			{
-				stack_.popBack();
-			}
+	private:
+		ObjectNode& root_;
 
-			ObjectNode& currentObject()
-			{
-				return *(ObjectNode*)stack_.back();
-			}
+		bool hasKey_;
+		Key key_;
 
-			ArrayNode& currentArray()
-			{
-				return *(ArrayNode*)stack_.back();
-			}
+		PODArray<void*, Alloc> stack_;
+	};
 
-		private:
-			static KeyDesc makeDesc(const Key& key)
-			{
-				return KeyDesc(key, key.notation(), key.delimiter());
-			}
-
-			static ValueDesc makeDesc(const Value& value)
-			{
-				switch (value.type())
-				{
-				case value_type_null:
-					return ValueDesc(null);
-
-				case value_type_boolean:
-					return ValueDesc(value.asBoolean());
-
-				case value_type_string:
-					return ValueDesc(value.asString(), value.stringNotation(), value.stringDelimiter());
-
-				case value_type_number:
-					return ValueDesc(value.asNumber());
-
-				default:
-					ECLOG_ASSERT(false);
-					return ValueDesc(null);
-				}
-			}
-
-		private:
-			ObjectNode& root_;
-
-			bool hasKey_;
-			Key key_;
-
-			PODArray<void*, Alloc> stack_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_DOCUMENTPARSEHANDLER_H_
 

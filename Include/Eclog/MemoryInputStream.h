@@ -12,6 +12,7 @@
 
 #include <string.h> // memcpy
 
+namespace vallest {
 namespace eclog {
 
 	class MemoryInputStream : public InputStream, private detail::NonCopyable {
@@ -49,6 +50,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_MEMORYINPUTSTREAM_H_
 

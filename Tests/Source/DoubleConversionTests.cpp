@@ -25,6 +25,7 @@ extern "C" double strtod(const char* s00, char** se);
 
 extern "C" char* dtoa(double dd, int mode, int ndigits, int* decpt, int* sign, char** rve);
 
+using namespace vallest;
 using eclog::detail::Binary64;
 using eclog::detail::BigInteger;
 using eclog::detail::stringToDouble;

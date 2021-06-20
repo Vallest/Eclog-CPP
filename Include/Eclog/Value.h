@@ -23,6 +23,7 @@
 	#pragma warning(disable: 4127)
 #endif
 
+namespace vallest {
 namespace eclog {
 
 	class Value {
@@ -212,6 +213,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #if defined(_MSC_VER)
 	#pragma warning(pop)

@@ -7,6 +7,7 @@
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
 
 	class OutputStream {
@@ -17,6 +18,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_OUTPUTSTREAM_H_
 

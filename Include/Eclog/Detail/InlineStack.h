@@ -9,60 +9,60 @@
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T, size_t MaxSize>
+	class InlineStack {
+	public:
+		InlineStack() : size_(0)
+		{
+		}
 
-		template<typename T, size_t MaxSize>
-		class InlineStack {
-		public:
-			InlineStack() : size_(0)
-			{
-			}
+		size_t maxSize() const
+		{
+			return MaxSize;
+		}
 
-			size_t maxSize() const
-			{
-				return MaxSize;
-			}
+		size_t size() const
+		{
+			return size_;
+		}
 
-			size_t size() const
-			{
-				return size_;
-			}
+		T& top()
+		{
+			ECLOG_ASSERT(size_ > 0 && size_ <= MaxSize);
+			return stack_[size_ - 1];
+		}
 
-			T& top()
-			{
-				ECLOG_ASSERT(size_ > 0 && size_ <= MaxSize);
-				return stack_[size_ - 1];
-			}
+		const T& top() const
+		{
+			ECLOG_ASSERT(size_ > 0 && size_ <= MaxSize);
+			return stack_[size_ - 1];
+		}
 
-			const T& top() const
-			{
-				ECLOG_ASSERT(size_ > 0 && size_ <= MaxSize);
-				return stack_[size_ - 1];
-			}
+		void push(const T& value)
+		{
+			ECLOG_ASSERT(size_ < MaxSize);
+			stack_[size_++] = value;
+		}
 
-			void push(const T& value)
-			{
-				ECLOG_ASSERT(size_ < MaxSize);
-				stack_[size_++] = value;
-			}
+		void pop()
+		{
+			ECLOG_ASSERT(size_ > 0);
+			--size_;
+		}
 
-			void pop()
-			{
-				ECLOG_ASSERT(size_ > 0);
-				--size_;
-			}
+	private:
+		T stack_[MaxSize];
 
-		private:
-			T stack_[MaxSize];
+		size_t size_;
+	};
 
-			size_t size_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_INLINESTACK_H_
 

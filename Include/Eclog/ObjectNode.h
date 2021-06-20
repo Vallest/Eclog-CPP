@@ -27,6 +27,7 @@
 #include <ostream>
 #include <string>
 
+namespace vallest {
 namespace eclog {
 
 	class ObjectNode : public ValueNode {
@@ -795,6 +796,7 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_OBJECTNODE_H_
 

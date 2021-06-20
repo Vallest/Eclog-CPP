@@ -16,6 +16,7 @@
 #include <Eclog/Detail/StringDelimiter.h>
 #include <Eclog/Detail/Assert.h>
 
+namespace vallest {
 namespace eclog {
 
 	class ValueDesc {
@@ -322,6 +323,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_VALUEDESC_H_
 

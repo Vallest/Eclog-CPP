@@ -7,27 +7,27 @@
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T>
+	inline void swap(T& a, T& b)
+	{
+		T t = a;
+		a = b;
+		b = t;
+	}
 
-		template<typename T>
-		inline void swap(T& a, T& b)
-		{
-			T t = a;
-			a = b;
-			b = t;
-		}
+	template<typename T, size_t Size>
+	inline size_t arraySize(const T(&)[Size])
+	{
+		return Size;
+	}
 
-		template<typename T, size_t Size>
-		inline size_t arraySize(const T(&)[Size])
-		{
-			return Size;
-		}
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_UTILITY_H_
 

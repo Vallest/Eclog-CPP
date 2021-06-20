@@ -8,6 +8,7 @@
 #include <Eclog/Error.h>
 #include <Eclog/Detail/UTF8Encoder.h>
 
+namespace vallest {
 namespace eclog {
 
 	class UTF8Encoder : private detail::UTF8Encoder {
@@ -28,6 +29,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_UTF8ENCODER_H_
 

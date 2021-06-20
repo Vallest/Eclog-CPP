@@ -10,6 +10,7 @@
 #include <Eclog/Error.h>
 #include <Eclog/Detail/StringDelimiter.h>
 
+namespace vallest {
 namespace eclog {
 
 	class KeyDesc {
@@ -49,6 +50,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_KEYDESC_H_
 

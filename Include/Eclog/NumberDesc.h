@@ -7,6 +7,7 @@
 
 #include <Eclog/ValueDesc.h>
 
+namespace vallest {
 namespace eclog {
 
 	class NumberDesc : public ValueDesc {
@@ -22,6 +23,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_NUMBERDESC_H_
 

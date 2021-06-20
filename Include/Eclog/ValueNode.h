@@ -9,6 +9,7 @@
 #include <Eclog/ValueDesc.h>
 #include <Eclog/Error.h>
 
+namespace vallest {
 namespace eclog {
 
 	class NullNode;
@@ -163,6 +164,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_VALUENODE_H_
 

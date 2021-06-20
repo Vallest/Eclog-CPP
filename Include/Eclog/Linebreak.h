@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_LINEBREAK_H_
 #define ECLOG_CPP_LINEBREAK_H_
 
+namespace vallest {
 namespace eclog {
 
 	enum Linebreak {
@@ -14,6 +15,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_LINEBREAK_H_
 

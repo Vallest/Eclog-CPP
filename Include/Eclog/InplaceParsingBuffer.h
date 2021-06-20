@@ -15,6 +15,7 @@
 
 #include <string.h> // memcpy
 
+namespace vallest {
 namespace eclog {
 
 	class InplaceParsingBuffer : public ParsingBuffer, private detail::NonCopyable {
@@ -182,6 +183,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_INPLACEPARSINGBUFFER_H_
 

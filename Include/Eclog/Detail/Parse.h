@@ -9,16 +9,16 @@
 #include <Eclog/Detail/Context.h>
 #include <Eclog/Detail/ParseHandler.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	void parseObject(Context& ctx, ParseHandler& handler, ErrorCode* ec);
+	void parseArray(Context& ctx, ParseHandler& handler, ErrorCode* ec);
 
-		void parseObject(Context& ctx, ParseHandler& handler, ErrorCode* ec);
-		void parseArray(Context& ctx, ParseHandler& handler, ErrorCode* ec);
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_PARSE_H_
 

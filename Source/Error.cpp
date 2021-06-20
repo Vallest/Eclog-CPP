@@ -12,6 +12,7 @@
 		return errid; \
 	}
 
+namespace vallest {
 namespace eclog {
 
 	ECLOG_DEFINE_ERROR_ID(Error, "Error")
@@ -204,4 +205,5 @@ namespace eclog {
 	template const BadCast* getDefaultError(void*);
 
 } // eclog
+} // vallest
 

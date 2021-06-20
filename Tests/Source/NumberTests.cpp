@@ -9,6 +9,8 @@
 #include <sstream>
 #include <limits>
 
+using namespace vallest;
+
 TEST_CASE("Number")
 {
 	SUBCASE("Construct")

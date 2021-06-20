@@ -7,6 +7,7 @@
 
 #include <Eclog/Linebreak.h>
 
+namespace vallest {
 namespace eclog {
 
 	struct RendererConfig {
@@ -81,6 +82,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_RENDERERCONFIG_H_
 

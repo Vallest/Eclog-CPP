@@ -21,6 +21,7 @@
 	#define ECLOG_HAS_INT128
 #endif
 
+namespace vallest {
 namespace eclog {
 
 #if defined(_MSC_VER) && !defined(_STDINT)
@@ -38,6 +39,7 @@ namespace eclog {
 #endif
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_INTTYPES_H_
 

@@ -10,6 +10,7 @@
 #include <Eclog/Detail/Parse.h>
 #include <Eclog/Detail/ParseHandlerAdapters.h>
 
+namespace vallest {
 namespace eclog {
 
 	template<typename Handler>
@@ -55,6 +56,7 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_PARSE_H_
 

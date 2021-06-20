@@ -12,6 +12,7 @@
 
 #include <stddef.h> // ptrdiff_t
 
+namespace vallest {
 namespace eclog {
 
 	class ArrayNode : public ValueNode {
@@ -544,6 +545,7 @@ namespace eclog {
 	}
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_ARRAYNODE_H_
 

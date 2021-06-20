@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_EMPTYARRAYTAG_H_
 #define ECLOG_CPP_EMPTYARRAYTAG_H_
 
+namespace vallest {
 namespace eclog {
 
 	enum EmptyArrayTag {
@@ -12,6 +13,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_EMPTYARRAYTAG_H_
 

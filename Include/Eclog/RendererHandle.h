@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_RENDERERHANDLE_H_
 #define ECLOG_CPP_RENDERERHANDLE_H_
 
+namespace vallest {
 namespace eclog {
 
 	class Renderer;
@@ -30,6 +31,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_RENDERERHANDLE_H_
 

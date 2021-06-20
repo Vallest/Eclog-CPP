@@ -18,9 +18,9 @@
 #include <stddef.h> // size_t
 #include <limits.h>
 
+namespace vallest {
 namespace eclog {
-
-	namespace detail {
+namespace detail {
 
 		static void onUnexpectedChar(int line, int column, int ch, ErrorCode* ec)
 		{
@@ -1629,7 +1629,7 @@ namespace eclog {
 			ctx.endNested();
 		}
 
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 

@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_NODETYPE_H_
 #define ECLOG_CPP_NODETYPE_H_
 
+namespace vallest {
 namespace eclog {
 
 	enum NodeType {
@@ -18,6 +19,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_NODETYPE_H_
 

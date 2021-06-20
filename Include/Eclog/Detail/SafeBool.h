@@ -5,29 +5,29 @@
 #ifndef ECLOG_CPP_DETAIL_SAFEBOOL_H_
 #define ECLOG_CPP_DETAIL_SAFEBOOL_H_
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class SafeBool {
+	public:
+		typedef void (SafeBool::*BoolType)() const;
 
-		class SafeBool {
-		public:
-			typedef void (SafeBool::*BoolType)() const;
+	public:
+		static BoolType make(bool value)
+		{
+			return value ? &SafeBool::boolTrue : 0;
+		}
 
-		public:
-			static BoolType make(bool value)
-			{
-				return value ? &SafeBool::boolTrue : 0;
-			}
+	private:
+		void boolTrue() const
+		{
+		}
+	};
 
-		private:
-			void boolTrue() const
-			{
-			}
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_SAFEBOOL_H_
 

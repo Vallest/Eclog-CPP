@@ -13,111 +13,111 @@
 #include <Eclog/Detail/CompilerSpecific.h>
 #include <Eclog/Detail/NonCopyable.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename Alloc>
+	class StringNodeImpl : public StringNode, private NonCopyable {
+	public:
+		explicit StringNodeImpl(const ValueDesc& desc) :
+			value_(desc.string()),
+			notation_(desc.stringNotation()),
+			delimiter_(desc.stringDelimiter())
+		{
+		}
 
-		template<typename Alloc>
-		class StringNodeImpl : public StringNode, private NonCopyable {
-		public:
-			explicit StringNodeImpl(const ValueDesc& desc) :
-				value_(desc.string()),
-				notation_(desc.stringNotation()),
-				delimiter_(desc.stringDelimiter())
-			{
+		explicit StringNodeImpl(const StringNode& other) :
+			value_(other.value()),
+			notation_(other.notation()),
+			delimiter_(other.delimiter())
+		{
+		}
+
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_string;
+		}
+
+		virtual cstring value() const ECLOG_OVERRIDE
+		{
+			return value_.str();
+		}
+
+		virtual void setNotation(StringNotation notation) ECLOG_OVERRIDE
+		{
+			notation_ = notation;
+		}
+
+		virtual StringNotation notation() const ECLOG_OVERRIDE
+		{
+			return notation_;
+		}
+
+		virtual void setDelimiter(cstring delimiter) ECLOG_OVERRIDE
+		{
+			setDelimiter(delimiter, 0);
+		}
+
+		virtual void setDelimiter(cstring delimiter, ErrorCode& ec) ECLOG_OVERRIDE
+		{
+			setDelimiter(delimiter, &ec);
+		}
+
+		virtual cstring delimiter() const ECLOG_OVERRIDE
+		{
+			return delimiter_.str();
+		}
+
+		virtual void assign(const StringDesc& desc) ECLOG_OVERRIDE
+		{
+			ByteArray<Alloc> value(desc.string());
+			ByteArray<Alloc> delimiter(desc.stringDelimiter());
+
+			swap(value_, value);
+			swap(delimiter_, delimiter);
+
+			notation_ = desc.stringNotation();
+		}
+
+		virtual void assign(const StringNode& other) ECLOG_OVERRIDE
+		{
+			if (&other == this) {
+				return;
 			}
 
-			explicit StringNodeImpl(const StringNode& other) :
-				value_(other.value()),
-				notation_(other.notation()),
-				delimiter_(other.delimiter())
+			ByteArray<Alloc> value(other.value());
+			ByteArray<Alloc> delimiter(other.delimiter());
+
+			swap(value_, value);
+			swap(delimiter_, delimiter);
+
+			notation_ = other.notation();
+		}
+
+	private:
+		void setDelimiter(cstring delimiter, ErrorCode* ec)
+		{
+			if (!StringDelimiter::validate(delimiter))
 			{
+				ECLOG_ERROR(InvalidArgument);
+				return;
 			}
 
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_string;
-			}
+			delimiter_ = delimiter;
+		}
 
-			virtual cstring value() const ECLOG_OVERRIDE
-			{
-				return value_.str();
-			}
+	private:
+		ByteArray<Alloc> value_;
 
-			virtual void setNotation(StringNotation notation) ECLOG_OVERRIDE
-			{
-				notation_ = notation;
-			}
+		StringNotation notation_;
+		ByteArray<Alloc> delimiter_;
+	};
 
-			virtual StringNotation notation() const ECLOG_OVERRIDE
-			{
-				return notation_;
-			}
-
-			virtual void setDelimiter(cstring delimiter) ECLOG_OVERRIDE
-			{
-				setDelimiter(delimiter, 0);
-			}
-
-			virtual void setDelimiter(cstring delimiter, ErrorCode& ec) ECLOG_OVERRIDE
-			{
-				setDelimiter(delimiter, &ec);
-			}
-
-			virtual cstring delimiter() const ECLOG_OVERRIDE
-			{
-				return delimiter_.str();
-			}
-
-			virtual void assign(const StringDesc& desc) ECLOG_OVERRIDE
-			{
-				ByteArray<Alloc> value(desc.string());
-				ByteArray<Alloc> delimiter(desc.stringDelimiter());
-
-				swap(value_, value);
-				swap(delimiter_, delimiter);
-
-				notation_ = desc.stringNotation();
-			}
-
-			virtual void assign(const StringNode& other) ECLOG_OVERRIDE
-			{
-				if (&other == this) {
-					return;
-				}
-
-				ByteArray<Alloc> value(other.value());
-				ByteArray<Alloc> delimiter(other.delimiter());
-
-				swap(value_, value);
-				swap(delimiter_, delimiter);
-
-				notation_ = other.notation();
-			}
-
-		private:
-			void setDelimiter(cstring delimiter, ErrorCode* ec)
-			{
-				if (!StringDelimiter::validate(delimiter))
-				{
-					ECLOG_ERROR(InvalidArgument);
-					return;
-				}
-
-				delimiter_ = delimiter;
-			}
-
-		private:
-			ByteArray<Alloc> value_;
-
-			StringNotation notation_;
-			ByteArray<Alloc> delimiter_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_STRINGNODEIMPL_H_
 

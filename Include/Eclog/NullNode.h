@@ -8,6 +8,7 @@
 #include <Eclog/ValueNode.h>
 #include <Eclog/Null.h>
 
+namespace vallest {
 namespace eclog {
 
 	class NullNode : public ValueNode {
@@ -22,6 +23,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_NULLNODE_H_
 

@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_VALUETYPE_H_
 #define ECLOG_CPP_VALUETYPE_H_
 
+namespace vallest {
 namespace eclog {
 
 	enum ValueType {
@@ -17,6 +18,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_VALUETYPE_H_
 

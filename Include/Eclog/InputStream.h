@@ -7,6 +7,7 @@
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
 
 	class InputStream {
@@ -18,6 +19,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_INPUTSTREAM_H_
 

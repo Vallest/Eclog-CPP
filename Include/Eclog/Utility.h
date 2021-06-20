@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_UTILITY_H_
 #define ECLOG_CPP_UTILITY_H_
 
+namespace vallest {
 namespace eclog {
 
 	template<typename T1, typename T2>
@@ -33,6 +34,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_UTILITY_H_
 

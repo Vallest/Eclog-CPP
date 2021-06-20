@@ -7,8 +7,6 @@
 
 #include "UnitTesting.h"
 
-#include <Eclog/Detail/NonCopyable.h>
-
 class DebugObject {
 public:
 	DebugObject(int value) : value_(value)
@@ -49,7 +47,7 @@ private:
 	int value_;
 };
 
-class ObjectLeakDetector : private eclog::detail::NonCopyable {
+class ObjectLeakDetector {
 public:
 	ObjectLeakDetector()
 	{
@@ -66,6 +64,10 @@ public:
 			FAIL("object leak detected");
 		}
 	}
+
+private:
+	ObjectLeakDetector(const ObjectLeakDetector&);
+	ObjectLeakDetector& operator=(const ObjectLeakDetector&);
 };
 
 #endif // ECLOG_TEST_DEBUGOBJECT_H_

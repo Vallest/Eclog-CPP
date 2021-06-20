@@ -7,6 +7,7 @@
 
 #include <Eclog/Detail/Context.h>
 
+namespace vallest {
 namespace eclog {
 
 	class Context : private detail::Context {
@@ -23,6 +24,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_CONTEXT_H_
 

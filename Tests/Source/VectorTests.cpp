@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <vector>
 
+using namespace vallest;
+
 TEST_CASE("Vector")
 {
 	SUBCASE("Push Back")

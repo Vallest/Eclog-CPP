@@ -21,139 +21,139 @@
 #include <Eclog/Detail/NonCopyable.h>
 #include <Eclog/Detail/Assert.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class DocumentRenderer : private NonCopyable {
+	public:
+		explicit DocumentRenderer(OutputStream& stream, const RendererConfig& rc = RendererConfig()) : renderer_(stream, rc)
+		{
+		}
 
-		class DocumentRenderer : private NonCopyable {
-		public:
-			explicit DocumentRenderer(OutputStream& stream, const RendererConfig& rc = RendererConfig()) : renderer_(stream, rc)
+		void render(const ObjectNode& root, ErrorCode* ec)
+		{
+			renderer_.beginObject(ec);
+			ECLOG_ON_ERROR(return);
+
+			renderObject(root, ec);
+			ECLOG_ON_ERROR(return);
+
+			renderer_.endObject(ec);
+			ECLOG_ON_ERROR(return);
+
+			renderer_.close(ec);
+			ECLOG_ON_ERROR(return);
+		}
+
+	private:
+		void renderObject(const ObjectNode& node, ErrorCode* ec)
+		{
+			for (ObjectNode::ConstIterator it = node.begin(); it != node.end(); ++it)
 			{
-			}
+				const KeyNode& keyNode = it->key();
+				const ValueNode& valueNode = it->value();
 
-			void render(const ObjectNode& root, ErrorCode* ec)
-			{
-				renderer_.beginObject(ec);
-				ECLOG_ON_ERROR(return);
-
-				renderObject(root, ec);
-				ECLOG_ON_ERROR(return);
-
-				renderer_.endObject(ec);
-				ECLOG_ON_ERROR(return);
-
-				renderer_.close(ec);
-				ECLOG_ON_ERROR(return);
-			}
-
-		private:
-			void renderObject(const ObjectNode& node, ErrorCode* ec)
-			{
-				for (ObjectNode::ConstIterator it = node.begin(); it != node.end(); ++it)
+				if (valueNode.isObject())
 				{
-					const KeyNode& keyNode = it->key();
-					const ValueNode& valueNode = it->value();
+					renderer_.beginObject(makeDesc(keyNode), ec);
+					ECLOG_ON_ERROR(return);
 
-					if (valueNode.isObject())
-					{
-						renderer_.beginObject(makeDesc(keyNode), ec);
-						ECLOG_ON_ERROR(return);
+					renderObject((const ObjectNode&)valueNode, ec);
+					ECLOG_ON_ERROR(return);
 
-						renderObject((const ObjectNode&)valueNode, ec);
-						ECLOG_ON_ERROR(return);
+					renderer_.endObject(ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else if (valueNode.isArray())
+				{
+					renderer_.beginArray(makeDesc(keyNode), ec);
+					ECLOG_ON_ERROR(return);
 
-						renderer_.endObject(ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else if (valueNode.isArray())
-					{
-						renderer_.beginArray(makeDesc(keyNode), ec);
-						ECLOG_ON_ERROR(return);
+					renderArray((const ArrayNode&)valueNode, ec);
+					ECLOG_ON_ERROR(return);
 
-						renderArray((const ArrayNode&)valueNode, ec);
-						ECLOG_ON_ERROR(return);
-
-						renderer_.endArray(ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else
-					{
-						renderer_.renderMember(makeDesc(keyNode), makeDesc(valueNode), ec);
-						ECLOG_ON_ERROR(return);
-					}
+					renderer_.endArray(ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else
+				{
+					renderer_.renderMember(makeDesc(keyNode), makeDesc(valueNode), ec);
+					ECLOG_ON_ERROR(return);
 				}
 			}
+		}
 
-			void renderArray(const ArrayNode& node, ErrorCode* ec)
+		void renderArray(const ArrayNode& node, ErrorCode* ec)
+		{
+			for (ArrayNode::ConstIterator it = node.begin(); it != node.end(); ++it)
 			{
-				for (ArrayNode::ConstIterator it = node.begin(); it != node.end(); ++it)
+				const ValueNode& valueNode = it->value();
+
+				if (valueNode.isObject())
 				{
-					const ValueNode& valueNode = it->value();
+					renderer_.beginObject(ec);
+					ECLOG_ON_ERROR(return);
 
-					if (valueNode.isObject())
-					{
-						renderer_.beginObject(ec);
-						ECLOG_ON_ERROR(return);
+					renderObject((const ObjectNode&)valueNode, ec);
+					ECLOG_ON_ERROR(return);
 
-						renderObject((const ObjectNode&)valueNode, ec);
-						ECLOG_ON_ERROR(return);
+					renderer_.endObject(ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else if (valueNode.isArray())
+				{
+					renderer_.beginArray(ec);
+					ECLOG_ON_ERROR(return);
 
-						renderer_.endObject(ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else if (valueNode.isArray())
-					{
-						renderer_.beginArray(ec);
-						ECLOG_ON_ERROR(return);
+					renderArray((const ArrayNode&)valueNode, ec);
+					ECLOG_ON_ERROR(return);
 
-						renderArray((const ArrayNode&)valueNode, ec);
-						ECLOG_ON_ERROR(return);
-
-						renderer_.endArray(ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else
-					{
-						renderer_.renderMember(makeDesc(valueNode), ec);
-						ECLOG_ON_ERROR(return);
-					}
+					renderer_.endArray(ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else
+				{
+					renderer_.renderMember(makeDesc(valueNode), ec);
+					ECLOG_ON_ERROR(return);
 				}
 			}
+		}
 
-			static KeyDesc makeDesc(const KeyNode& keyNode)
+		static KeyDesc makeDesc(const KeyNode& keyNode)
+		{
+			return KeyDesc(keyNode.str(), keyNode.notation(), keyNode.delimiter());
+		}
+
+		static ValueDesc makeDesc(const ValueNode& valueNode)
+		{
+			switch (valueNode.nodeType())
 			{
-				return KeyDesc(keyNode.str(), keyNode.notation(), keyNode.delimiter());
+			case node_type_null:
+				return ValueDesc(null);
+
+			case node_type_boolean:
+				return ValueDesc(((const BooleanNode&)valueNode).value());
+
+			case node_type_string:
+				return ValueDesc(((const StringNode&)valueNode).value(), ((const StringNode&)valueNode).notation(), ((const StringNode&)valueNode).delimiter());
+
+			case node_type_number:
+				return ValueDesc(((const NumberNode&)valueNode).value(), ((const NumberNode&)valueNode).fracDigits());
+
+			default:
+				ECLOG_ASSERT(false);
+				return ValueDesc(null);
 			}
+		}
 
-			static ValueDesc makeDesc(const ValueNode& valueNode)
-			{
-				switch (valueNode.nodeType())
-				{
-				case node_type_null:
-					return ValueDesc(null);
+	private:
+		Renderer renderer_;
+	};
 
-				case node_type_boolean:
-					return ValueDesc(((const BooleanNode&)valueNode).value());
-
-				case node_type_string:
-					return ValueDesc(((const StringNode&)valueNode).value(), ((const StringNode&)valueNode).notation(), ((const StringNode&)valueNode).delimiter());
-
-				case node_type_number:
-					return ValueDesc(((const NumberNode&)valueNode).value(), ((const NumberNode&)valueNode).fracDigits());
-
-				default:
-					ECLOG_ASSERT(false);
-					return ValueDesc(null);
-				}
-			}
-
-		private:
-			Renderer renderer_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_DOCUMENTRENDERER_H_
 

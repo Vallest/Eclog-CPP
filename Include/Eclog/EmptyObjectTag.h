@@ -5,6 +5,7 @@
 #ifndef ECLOG_CPP_EMPTYOBJECTTAG_H_
 #define ECLOG_CPP_EMPTYOBJECTTAG_H_
 
+namespace vallest {
 namespace eclog {
 
 	enum EmptyObjectTag {
@@ -12,6 +13,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_EMPTYOBJECTTAG_H_
 

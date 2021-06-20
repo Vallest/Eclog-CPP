@@ -4,9 +4,11 @@
 
 #include <Eclog/Null.h>
 
+namespace vallest {
 namespace eclog {
 
 	Null null;
 
 } // eclog
+} //vallest
 

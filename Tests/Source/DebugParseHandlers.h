@@ -15,6 +15,8 @@
 #include <sstream>
 #include <string>
 
+using namespace vallest;
+
 class DebugParseHandler {
 public:
 	DebugParseHandler()

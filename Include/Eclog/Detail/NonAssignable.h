@@ -5,22 +5,22 @@
 #ifndef ECLOG_CPP_DETAIL_NONASSIGNABLE_H_
 #define ECLOG_CPP_DETAIL_NONASSIGNABLE_H_
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class NonAssignable {
+	protected:
+		NonAssignable() {}
+		~NonAssignable() {}
 
-		class NonAssignable {
-		protected:
-			NonAssignable() {}
-			~NonAssignable() {}
+	private:
+		NonAssignable& operator=(const NonAssignable&);
+	};
 
-		private:
-			NonAssignable& operator=(const NonAssignable&);
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_NONASSIGNABLE_H_
 

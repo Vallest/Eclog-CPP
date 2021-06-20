@@ -9,31 +9,31 @@
 #include <Eclog/Error.h>
 #include <Eclog/Detail/NonCopyable.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class UTF8Encoder : private NonCopyable {
+	public:
+		explicit UTF8Encoder(OutputStream& os) : os_(os)
+		{
+		}
 
-		class UTF8Encoder : private NonCopyable {
-		public:
-			explicit UTF8Encoder(OutputStream& os) : os_(os)
-			{
-			}
+		void putChar(int ch, ErrorCode* ec)
+		{
+			encode(ch, ec);
+		}
 
-			void putChar(int ch, ErrorCode* ec)
-			{
-				encode(ch, ec);
-			}
+	private:
+		void encode(int ch, ErrorCode* ec);
 
-		private:
-			void encode(int ch, ErrorCode* ec);
+	private:
+		OutputStream& os_;
+	};
 
-		private:
-			OutputStream& os_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_UTF8ENCODER_H_
 

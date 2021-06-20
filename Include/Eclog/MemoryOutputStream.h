@@ -11,6 +11,7 @@
 #include <Eclog/Detail/CompilerSpecific.h>
 #include <Eclog/Detail/NonCopyable.h>
 
+namespace vallest {
 namespace eclog {
 
 	template<typename Alloc>
@@ -54,6 +55,7 @@ namespace eclog {
 	typedef BasicMemoryOutputStream<ECLOG_DEFAULT_ALLOCATOR> MemoryOutputStream;
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_MEMORYOUTPUTSTREAM_H_
 

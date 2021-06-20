@@ -11,6 +11,7 @@
 
 #include <string>
 
+namespace vallest {
 namespace eclog {
 
 	class StdStringOutputStream : public OutputStream, private detail::NonCopyable {
@@ -41,6 +42,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_STRINGOUTPUTSTREAM_H_
 

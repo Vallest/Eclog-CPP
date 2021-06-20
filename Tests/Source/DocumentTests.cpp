@@ -16,6 +16,8 @@
 
 #include <stdlib.h> // atoi
 
+using namespace vallest;
+
 namespace {
 
 	std::string generateRandKey(Random& rand, int maxValue)

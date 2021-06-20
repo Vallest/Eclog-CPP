@@ -9,6 +9,8 @@
 #include <sstream>
 #include <iomanip>
 
+using namespace vallest;
+
 TEST_CASE("cstring")
 {
 	SUBCASE("Construct")

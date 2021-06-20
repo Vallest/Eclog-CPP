@@ -11,6 +11,7 @@
 
 #include <ostream>
 
+namespace vallest {
 namespace eclog {
 
 	class StdStreamOutputStream : public OutputStream, private detail::NonCopyable {
@@ -35,6 +36,7 @@ namespace eclog {
 	};
 
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_STDSTREAMOUTPUTSTREAM_H_
 

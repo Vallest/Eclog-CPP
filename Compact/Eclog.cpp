@@ -13,6 +13,7 @@
 		return errid; \
 	}
 
+namespace vallest {
 namespace eclog {
 
 	ECLOG_DEFINE_ERROR_ID(Error, "Error")
@@ -205,903 +206,1006 @@ namespace eclog {
 	template const BadCast* getDefaultError(void*);
 
 } // eclog
+} // vallest
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1500) && defined(_M_X64)
-	#define ECLOG_HAS_UMUL128
-	#include <intrin.h>
+#define ECLOG_HAS_UMUL128
+#include <intrin.h>
 #endif
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
-
-		inline uint64_t mulAdd64to128(uint64_t a, uint64_t b, uint64_t c, uint64_t* high)
-		{
+	inline uint64_t mulAdd64to128(uint64_t a, uint64_t b, uint64_t c, uint64_t* high)
+	{
 #if defined(ECLOG_HAS_UMUL128)
-			uint64_t low = _umul128(a, b, high) + c;
+		uint64_t low = _umul128(a, b, high) + c;
 
-			if (low < c) {
-				++*high;
-			}
+		if (low < c) {
+			++*high;
+		}
 
-			return low;
+		return low;
 #elif defined(ECLOG_HAS_INT128)
-			uint128_t n = (uint128_t)(a) * (uint128_t)(b) + c;
+		uint128_t n = (uint128_t)(a) * (uint128_t)(b) + c;
 
-			*high = (uint64_t)(n >> 64);
+		*high = (uint64_t)(n >> 64);
 
-			return (uint64_t)(n);
+		return (uint64_t)(n);
 #else
-			uint64_t al = ECLOG_LOW32(a);
-			uint64_t ah = ECLOG_HIGH32(a);
-			uint64_t bl = ECLOG_LOW32(b);
-			uint64_t bh = ECLOG_HIGH32(b);
+		uint64_t al = ECLOG_LOW32(a);
+		uint64_t ah = ECLOG_HIGH32(a);
+		uint64_t bl = ECLOG_LOW32(b);
+		uint64_t bh = ECLOG_HIGH32(b);
 
-			uint64_t p0 = al * bl;
-			uint64_t p1 = al * bh;
-			uint64_t p2 = ah * bl;
-			uint64_t p3 = ah * bh;
+		uint64_t p0 = al * bl;
+		uint64_t p1 = al * bh;
+		uint64_t p2 = ah * bl;
+		uint64_t p3 = ah * bh;
 
-			uint32_t carry = ECLOG_HIGH32((uint64_t)ECLOG_HIGH32(p0) + ECLOG_LOW32(p1) + ECLOG_LOW32(p2));
+		uint32_t carry = ECLOG_HIGH32((uint64_t)ECLOG_HIGH32(p0) + ECLOG_LOW32(p1) + ECLOG_LOW32(p2));
 
-			*high = p3 + ECLOG_HIGH32(p1) + ECLOG_HIGH32(p2) + carry;
+		*high = p3 + ECLOG_HIGH32(p1) + ECLOG_HIGH32(p2) + carry;
 
-			uint64_t low = p0 + (p1 << 32) + (p2 << 32) + c;
+		uint64_t low = p0 + (p1 << 32) + (p2 << 32) + c;
 
-			if (low < c) {
-				++*high;
-			}
+		if (low < c) {
+			++*high;
+		}
 
-			return low;
+		return low;
 #endif
-		}
+	}
 
-		inline uint64_t add64to128(uint64_t a, uint64_t b, uint64_t* high)
-		{
-			uint64_t low = a + b;
+	inline uint64_t add64to128(uint64_t a, uint64_t b, uint64_t* high)
+	{
+		uint64_t low = a + b;
 
-			*high = (low < a) ? 1 : 0;
+		*high = (low < a) ? 1 : 0;
 
-			return low;
-		}
+		return low;
+	}
 
-		inline uint64_t add128(uint64_t al, uint64_t ah, uint64_t bl, uint64_t bh, uint64_t* high)
-		{
-			uint64_t low = al + bl;
+	inline uint64_t add128(uint64_t al, uint64_t ah, uint64_t bl, uint64_t bh, uint64_t* high)
+	{
+		uint64_t low = al + bl;
 
-			*high = ah + bh + ((low < al) ? 1 : 0);
+		*high = ah + bh + ((low < al) ? 1 : 0);
 
-			return low;
-		}
+		return low;
+	}
 
-		inline uint64_t subtract128(uint64_t al, uint64_t ah, uint64_t bl, uint64_t bh, uint64_t* high)
-		{
-			uint64_t low = al - bl;
+	inline uint64_t subtract128(uint64_t al, uint64_t ah, uint64_t bl, uint64_t bh, uint64_t* high)
+	{
+		uint64_t low = al - bl;
 
-			*high = ah - bh - ((low > al) ? 1 : 0);
+		*high = ah - bh - ((low > al) ? 1 : 0);
 
-			return low;
-		}
+		return low;
+	}
 
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #include <string.h> // strlen, memset, memcmp, memmove
 
+namespace vallest {
 namespace eclog {
-
-	namespace detail {
-
-		class BigInteger {
-		private:
-			enum {
-				max_bit = 3328,
-				max_chunk = max_bit / 64,
-				highest_index = max_chunk - 1,
-			};
-
-		public:
-			BigInteger()
-			{
-				zero();
-			}
-
-			BigInteger(uint64_t n)
-			{
-				assign(n);
-			}
-
-			BigInteger(const char* str, size_t length)
-			{
-				zero();
-				appendDecimal(str, length);
-			}
-
-			BigInteger(const BigInteger& other)
-			{
-				assign(other);
-			}
-
-			bool isZero() const
-			{
-				return (count_ == 1 && chunks_[0] == 0);
-			}
-
-			uint64_t at(size_t index) const
-			{
-				return (index < count_ ? chunks_[index] : 0);
-			}
-
-			bool equals(uint64_t n) const
-			{
-				return (count_ == 1 && chunks_[0] == n);
-			}
-
-			bool equals(const BigInteger& other) const
-			{
-				if (count_ == other.count_) {
-					return (memcmp(chunks_, other.chunks_, sizeof(uint64_t) * count_) == 0);
-				}
-
-				return false;
-			}
-
-			int compare(const BigInteger& other) const
-			{
-				if (count_ != other.count_) {
-					return (count_ < other.count_ ? -1 : 1);
-				}
-
-				for (size_t i = count_; i > 0; --i)
-				{
-					if (chunks_[i - 1] != other.chunks_[i - 1]) {
-						return (chunks_[i - 1] < other.chunks_[i - 1] ? -1 : 1);
-					}
-				}
-
-				return 0;
-			}
-
-			int plusCompare(const BigInteger& delta, const BigInteger& other) const
-			{
-				if (count_ < delta.count_) {
-					return delta.plusCompare(*this, other);
-				}
-
-				if (count_ + 1 < other.count_) {
-					return -1;
-				}
-
-				if (count_ > other.count_) {
-					return 1;
-				}
-
-#ifdef ECLOG_HAS_INT128
-				uint128_t borrow = 0;
-
-				for (size_t i = other.count_ - 1; i != ((size_t)0 - 1); --i)
-				{
-					uint128_t sum = (uint128_t)at(i) + (uint128_t)delta.at(i);
-					uint128_t n = (uint128_t)other.chunks_[i] + borrow;
-
-					if (sum > n)
-					{
-						return 1;
-					}
-					else
-					{
-						if ((borrow = n - sum) > 1) {
-							return -1;
-						}
-
-						borrow = borrow << 64;
-					}
-				}
-
-				if (borrow) {
-					return -1;
-				}
-#else
-				uint64_t borrowHigh = 0;
-				uint64_t borrowLow = 0;
-
-				for (size_t i = other.count_ - 1; i != ((size_t)0 - 1); --i)
-				{
-					uint64_t sumHigh;
-					uint64_t sumLow = add64to128(at(i), delta.at(i), &sumHigh);
-
-					uint64_t high;
-					uint64_t low = add128(other.chunks_[i], 0, borrowLow, borrowHigh, &high);
-
-					if (sumHigh > high || (sumHigh == high && sumLow > low))
-					{
-						return 1;
-					}
-					else
-					{
-						borrowLow = subtract128(low, high, sumLow, sumHigh, &borrowHigh);
-
-						if (borrowHigh || borrowLow > 1) {
-							return -1;
-						}
-
-						borrowHigh = borrowLow;
-						borrowLow = 0;
-					}
-				}
-
-				if (borrowHigh || borrowLow) {
-					return -1;
-				}
-#endif
-				return 0;
-			}
-
-			void zero()
-			{
-				chunks_[0] = 0;
-				count_ = 1;
-			}
-
-			void assign(uint64_t n)
-			{
-				chunks_[0] = n;
-				count_ = 1;
-			}
-
-			void assign(const BigInteger& other)
-			{
-				if (this == &other) {
-					return;
-				}
-
-				count_ = other.count_;
-				memcpy(chunks_, other.chunks_, sizeof(uint64_t) * count_);
-			}
-
-			void assign(const char* str, size_t length)
-			{
-				zero();
-				appendDecimal(str, length);
-			}
-
-			void add(uint64_t n)
-			{
-				uint64_t m = chunks_[0];
-
-				chunks_[0] += n;
-
-				for (size_t i = 0; i < count_ - 1; ++i)
-				{
-					if (chunks_[i] < m)
-					{
-						m = chunks_[i + 1];
-						chunks_[i + 1] += 1;
-					}
-					else
-					{
-						return;
-					}
-				}
-
-				if (chunks_[count_ - 1] < m) {
-					append(1);
-				}
-			}
-
-			void subtract(const BigInteger& other)
-			{
-				subtract(this, &other, this);
-			}
-
-			void subtractTimes(const BigInteger& other, uint64_t factor)
-			{
-				if (factor == 0) {
-					return;
-				}
-
-				if (factor == 1)
-				{
-					subtract(other);
-					return;
-				}
-
-				uint64_t borrow = 0;
-				uint64_t carry = 0;
-
-				size_t index = 0;
-
-				for (; index < other.count_; ++index)
-				{
-					uint64_t high;
-					uint64_t low = mulAdd64to128(other.chunks_[index], factor, carry, &high);
-
-					uint64_t m = at(index);
-					uint64_t n = m - borrow - low;
-
-					chunks_[index] = n;
-
-					borrow = ((n > m) || (n == m && borrow)) ? 1 : 0;
-					carry = high;
-				}
-
-				for (; index < count_ || ((borrow || carry) && index < max_chunk); ++index)
-				{
-					uint64_t m = chunks_[index];
-					uint64_t n = m - borrow - carry;
-
-					chunks_[index] = n;
-
-					borrow = ((n > m) || (n == m && borrow)) ? 1 : 0;
-					carry = 0;
-				}
-
-				clamp(index);
-			}
-
-			void multiply(uint64_t n)
-			{
-				if (n == 0) {
-					zero();
-					return;
-				}
-
-				if (n == 1) {
-					return;
-				}
-
-				if (isZero()) {
-					return;
-				}
-
-				uint64_t carry = 0;
-
-				for (size_t i = 0; i < count_; ++i)
-				{
-					uint64_t high;
-					uint64_t low = mulAdd64to128(chunks_[i], n, carry, &high);
-
-					chunks_[i] = low;
-					carry = high;
-				}
-
-				if (carry) {
-					append(carry);
-				}
-			}
-
-			void multiplyPow10(size_t n)
-			{
-				multiplyPow5(n);
-				multiplyPow2(n);
-			}
-
-			void multiplyPow5(size_t n)
-			{
-				static const uint32_t cachedPow5[] = {
-					1,
-					5,
-					5 * 5,
-					5 * 5 * 5,
-					5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
-					5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
-				};
-
-				while (n >= 27)
-				{
-					multiply(ECLOG_MAKE64(0x6765c793, 0xfa10079d));
-					n -= 27;
-				}
-
-				while (n > 13)
-				{
-					multiply(cachedPow5[13]);
-					n -= 13;
-				}
-
-				multiply(cachedPow5[n]);
-			}
-
-			void multiplyPow2(size_t n)
-			{
-				shiftLeft(n);
-			}
-
-			void shiftLeft(size_t n)
-			{
-				if (isZero()) {
-					return;
-				}
-
-				if (n == 0) {
-					return;
-				}
-
-				size_t chunkShift = n / 64;
-				size_t bitShift = n % 64;
-
-				if (chunkShift > max_chunk - 1)
-				{
-					zero();
-					return;
-				}
-
-				size_t count;
-
-				if (bitShift)
-				{
-					count = chunkShift + count_;
-					size_t index = count - 1;
-					size_t m = 0;
-
-					uint64_t newChunk = chunks_[count_ - 1] >> (64 - bitShift);
-
-					if (newChunk && index + 1 <= highest_index)
-					{
-						chunks_[index + 1] = newChunk;
-						++count;
-					}
-
-					if (index > highest_index)
-					{
-						m = index - highest_index;
-						index = highest_index;
-						count = max_chunk;
-					}
-
-					for (size_t i = count_ - 1 - m; i > 0; --i) {
-						chunks_[index--] = (chunks_[i] << bitShift) | chunks_[i - 1] >> (64 - bitShift);
-					}
-
-					chunks_[index] = chunks_[0] << bitShift;
-				}
-				else
-				{
-					size_t m = chunkShift + count_ > max_chunk ? max_chunk - chunkShift : count_;
-					count = chunkShift + m;
-
-					memmove(&chunks_[chunkShift], &chunks_[0], sizeof(uint64_t) * m);
-				}
-
-				memset(chunks_, 0, chunkShift * sizeof(uint64_t));
-				clamp(count);
-			}
-
-			void shiftRight(size_t n)
-			{
-				if (isZero()) {
-					return;
-				}
-
-				if (n == 0) {
-					return;
-				}
-
-				size_t chunkShift = n / 64;
-				size_t bitShift = n % 64;
-
-				if (chunkShift >= count_)
-				{
-					zero();
-					return;
-				}
-
-				if (bitShift)
-				{
-					size_t index = 0;
-
-					for (size_t i = chunkShift; i < count_ - 1; ++i) {
-						chunks_[index++] = (chunks_[i] >> bitShift) | chunks_[i + 1] << (64 - bitShift);
-					}
-
-					chunks_[index] = chunks_[count_ - 1] >> bitShift;
-
-					count_ -= chunkShift;
-					count_ -= (chunks_[index] == 0 && count_ > 1) ? 1 : 0;
-				}
-				else
-				{
-					memmove(&chunks_[0], &chunks_[chunkShift], sizeof(uint64_t) * (count_ - chunkShift));
-					count_ -= chunkShift;
-				}
-			}
-
-			uint16_t divideWithRemainder(const BigInteger& other)
-			{
-				if (other.isZero()) {
-					return (uint16_t)(-1);
-				}
-
-				if (count_ < other.count_) {
-					return 0;
-				}
-
-				uint64_t result = 0;
-
-				while (count_ > other.count_)
-				{
-					uint64_t n = chunks_[count_ - 1];
-
-					subtractTimes(other, n);
-
-					result += n;
-				}
-
-				uint64_t a = chunks_[count_ - 1];
-				uint64_t b = other.chunks_[other.count_ - 1];
-
-				if (a > b && b + 1 > b)
-				{
-					uint64_t n = a / (b + 1);
-
-					subtractTimes(other, n);
-
-					result += n;
-				}
-
-				while (compare(other) >= 0)
-				{
-					subtract(other);
-
-					result += 1;
-				}
-
-				return (uint16_t)result;
-			}
-
-			int difference(const BigInteger& other)
-			{
-				int cmp = compare(other);
-
-				if (cmp == 0)
-				{
-					zero();
-					return 0;
-				}
-
-				const BigInteger* a;
-				const BigInteger* b;
-
-				if (cmp < 0)
-				{
-					a = &other;
-					b = this;
-				}
-				else
-				{
-					a = this;
-					b = &other;
-				}
-
-				subtract(a, b, this);
-
-				return cmp;
-			}
-
-			void appendDecimal(const char* str, size_t length)
-			{
-				if (length == (size_t)(-1)) {
-					length = strlen(str);
-				}
-
-				while (length >= 19)
-				{
-					appendDecimal64(str, 19);
-
-					str += 19;
-					length -= 19;
-				}
-
-				if (length) {
-					appendDecimal64(str, length);
-				}
-			}
-
-		private:
-			static void subtract(const BigInteger* a, const BigInteger* b, BigInteger* outResult)
-			{
-				size_t count = max(a->count_, b->count_);
-				uint64_t borrow = 0;
-
-				for (size_t i = 0; i < count; ++i)
-				{
-					uint64_t m = a->at(i);
-					uint64_t n = m - borrow - b->at(i);
-
-					outResult->chunks_[i] = n;
-
-					borrow = ((n > m) || (n == m && borrow)) ? 1 : 0;
-				}
-
-				if (borrow)
-				{
-					memset(&outResult->chunks_[count], 0xff, (max_chunk - count) * sizeof(uint64_t));
-
-					outResult->count_ = max_chunk;
-				}
-				else
-				{
-					outResult->clamp(count);
-				}
-			}
-
-			void appendDecimal64(const char* str, size_t length)
-			{
-				uint64_t n = 0;
-				size_t exp = 0;
-
-				for (size_t i = 0; i < length; ++i)
-				{
-					if (isDigit(*str))
-					{
-						n = n * 10 + (*str - '0');
-						++exp;
-					}
-
-					++str;
-				}
-
-				if (isZero())
-				{
-					assign(n);
-					return;
-				}
-
-				multiplyPow10(exp);
-				add(n);
-			}
-
-			void append(uint64_t n)
-			{
-				if (count_ < max_chunk) {
-					chunks_[count_++] = n;
-				}
-			}
-
-			void clamp(size_t count)
-			{
-				for (count_ = count; count_ > 1; --count_)
-				{
-					if (chunks_[count_ - 1]) {
-						break;
-					}
-				}
-			}
-
-		private:
-			uint64_t chunks_[max_chunk];
-			size_t count_;
+namespace detail {
+
+	class BigInteger {
+	private:
+		enum {
+			max_bit = 3328,
+			max_chunk = max_bit / 64,
+			highest_index = max_chunk - 1,
 		};
 
-	} // detail
+	public:
+		BigInteger()
+		{
+			zero();
+		}
 
+		BigInteger(uint64_t n)
+		{
+			assign(n);
+		}
+
+		BigInteger(const char* str, size_t length)
+		{
+			zero();
+			appendDecimal(str, length);
+		}
+
+		BigInteger(const BigInteger& other)
+		{
+			assign(other);
+		}
+
+		bool isZero() const
+		{
+			return (count_ == 1 && chunks_[0] == 0);
+		}
+
+		uint64_t at(size_t index) const
+		{
+			return (index < count_ ? chunks_[index] : 0);
+		}
+
+		bool equals(uint64_t n) const
+		{
+			return (count_ == 1 && chunks_[0] == n);
+		}
+
+		bool equals(const BigInteger& other) const
+		{
+			if (count_ == other.count_) {
+				return (memcmp(chunks_, other.chunks_, sizeof(uint64_t) * count_) == 0);
+			}
+
+			return false;
+		}
+
+		int compare(const BigInteger& other) const
+		{
+			if (count_ != other.count_) {
+				return (count_ < other.count_ ? -1 : 1);
+			}
+
+			for (size_t i = count_; i > 0; --i)
+			{
+				if (chunks_[i - 1] != other.chunks_[i - 1]) {
+					return (chunks_[i - 1] < other.chunks_[i - 1] ? -1 : 1);
+				}
+			}
+
+			return 0;
+		}
+
+		int plusCompare(const BigInteger& delta, const BigInteger& other) const
+		{
+			if (count_ < delta.count_) {
+				return delta.plusCompare(*this, other);
+			}
+
+			if (count_ + 1 < other.count_) {
+				return -1;
+			}
+
+			if (count_ > other.count_) {
+				return 1;
+			}
+
+#ifdef ECLOG_HAS_INT128
+			uint128_t borrow = 0;
+
+			for (size_t i = other.count_ - 1; i != ((size_t)0 - 1); --i)
+			{
+				uint128_t sum = (uint128_t)at(i) + (uint128_t)delta.at(i);
+				uint128_t n = (uint128_t)other.chunks_[i] + borrow;
+
+				if (sum > n)
+				{
+					return 1;
+				}
+				else
+				{
+					if ((borrow = n - sum) > 1) {
+						return -1;
+					}
+
+					borrow = borrow << 64;
+				}
+			}
+
+			if (borrow) {
+				return -1;
+			}
+#else
+			uint64_t borrowHigh = 0;
+			uint64_t borrowLow = 0;
+
+			for (size_t i = other.count_ - 1; i != ((size_t)0 - 1); --i)
+			{
+				uint64_t sumHigh;
+				uint64_t sumLow = add64to128(at(i), delta.at(i), &sumHigh);
+
+				uint64_t high;
+				uint64_t low = add128(other.chunks_[i], 0, borrowLow, borrowHigh, &high);
+
+				if (sumHigh > high || (sumHigh == high && sumLow > low))
+				{
+					return 1;
+				}
+				else
+				{
+					borrowLow = subtract128(low, high, sumLow, sumHigh, &borrowHigh);
+
+					if (borrowHigh || borrowLow > 1) {
+						return -1;
+					}
+
+					borrowHigh = borrowLow;
+					borrowLow = 0;
+				}
+			}
+
+			if (borrowHigh || borrowLow) {
+				return -1;
+			}
+#endif
+			return 0;
+		}
+
+		void zero()
+		{
+			chunks_[0] = 0;
+			count_ = 1;
+		}
+
+		void assign(uint64_t n)
+		{
+			chunks_[0] = n;
+			count_ = 1;
+		}
+
+		void assign(const BigInteger& other)
+		{
+			if (this == &other) {
+				return;
+			}
+
+			count_ = other.count_;
+			memcpy(chunks_, other.chunks_, sizeof(uint64_t) * count_);
+		}
+
+		void assign(const char* str, size_t length)
+		{
+			zero();
+			appendDecimal(str, length);
+		}
+
+		void add(uint64_t n)
+		{
+			uint64_t m = chunks_[0];
+
+			chunks_[0] += n;
+
+			for (size_t i = 0; i < count_ - 1; ++i)
+			{
+				if (chunks_[i] < m)
+				{
+					m = chunks_[i + 1];
+					chunks_[i + 1] += 1;
+				}
+				else
+				{
+					return;
+				}
+			}
+
+			if (chunks_[count_ - 1] < m) {
+				append(1);
+			}
+		}
+
+		void subtract(const BigInteger& other)
+		{
+			subtract(this, &other, this);
+		}
+
+		void subtractTimes(const BigInteger& other, uint64_t factor)
+		{
+			if (factor == 0) {
+				return;
+			}
+
+			if (factor == 1)
+			{
+				subtract(other);
+				return;
+			}
+
+			uint64_t borrow = 0;
+			uint64_t carry = 0;
+
+			size_t index = 0;
+
+			for (; index < other.count_; ++index)
+			{
+				uint64_t high;
+				uint64_t low = mulAdd64to128(other.chunks_[index], factor, carry, &high);
+
+				uint64_t m = at(index);
+				uint64_t n = m - borrow - low;
+
+				chunks_[index] = n;
+
+				borrow = ((n > m) || (n == m && borrow)) ? 1 : 0;
+				carry = high;
+			}
+
+			for (; index < count_ || ((borrow || carry) && index < max_chunk); ++index)
+			{
+				uint64_t m = chunks_[index];
+				uint64_t n = m - borrow - carry;
+
+				chunks_[index] = n;
+
+				borrow = ((n > m) || (n == m && borrow)) ? 1 : 0;
+				carry = 0;
+			}
+
+			clamp(index);
+		}
+
+		void multiply(uint64_t n)
+		{
+			if (n == 0) {
+				zero();
+				return;
+			}
+
+			if (n == 1) {
+				return;
+			}
+
+			if (isZero()) {
+				return;
+			}
+
+			uint64_t carry = 0;
+
+			for (size_t i = 0; i < count_; ++i)
+			{
+				uint64_t high;
+				uint64_t low = mulAdd64to128(chunks_[i], n, carry, &high);
+
+				chunks_[i] = low;
+				carry = high;
+			}
+
+			if (carry) {
+				append(carry);
+			}
+		}
+
+		void multiplyPow10(size_t n)
+		{
+			multiplyPow5(n);
+			multiplyPow2(n);
+		}
+
+		void multiplyPow5(size_t n)
+		{
+			static const uint32_t cachedPow5[] = {
+				1,
+				5,
+				5 * 5,
+				5 * 5 * 5,
+				5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
+				5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5 * 5,
+			};
+
+			while (n >= 27)
+			{
+				multiply(ECLOG_MAKE64(0x6765c793, 0xfa10079d));
+				n -= 27;
+			}
+
+			while (n > 13)
+			{
+				multiply(cachedPow5[13]);
+				n -= 13;
+			}
+
+			multiply(cachedPow5[n]);
+		}
+
+		void multiplyPow2(size_t n)
+		{
+			shiftLeft(n);
+		}
+
+		void shiftLeft(size_t n)
+		{
+			if (isZero()) {
+				return;
+			}
+
+			if (n == 0) {
+				return;
+			}
+
+			size_t chunkShift = n / 64;
+			size_t bitShift = n % 64;
+
+			if (chunkShift > max_chunk - 1)
+			{
+				zero();
+				return;
+			}
+
+			size_t count;
+
+			if (bitShift)
+			{
+				count = chunkShift + count_;
+				size_t index = count - 1;
+				size_t m = 0;
+
+				uint64_t newChunk = chunks_[count_ - 1] >> (64 - bitShift);
+
+				if (newChunk && index + 1 <= highest_index)
+				{
+					chunks_[index + 1] = newChunk;
+					++count;
+				}
+
+				if (index > highest_index)
+				{
+					m = index - highest_index;
+					index = highest_index;
+					count = max_chunk;
+				}
+
+				for (size_t i = count_ - 1 - m; i > 0; --i) {
+					chunks_[index--] = (chunks_[i] << bitShift) | chunks_[i - 1] >> (64 - bitShift);
+				}
+
+				chunks_[index] = chunks_[0] << bitShift;
+			}
+			else
+			{
+				size_t m = chunkShift + count_ > max_chunk ? max_chunk - chunkShift : count_;
+				count = chunkShift + m;
+
+				memmove(&chunks_[chunkShift], &chunks_[0], sizeof(uint64_t) * m);
+			}
+
+			memset(chunks_, 0, chunkShift * sizeof(uint64_t));
+			clamp(count);
+		}
+
+		void shiftRight(size_t n)
+		{
+			if (isZero()) {
+				return;
+			}
+
+			if (n == 0) {
+				return;
+			}
+
+			size_t chunkShift = n / 64;
+			size_t bitShift = n % 64;
+
+			if (chunkShift >= count_)
+			{
+				zero();
+				return;
+			}
+
+			if (bitShift)
+			{
+				size_t index = 0;
+
+				for (size_t i = chunkShift; i < count_ - 1; ++i) {
+					chunks_[index++] = (chunks_[i] >> bitShift) | chunks_[i + 1] << (64 - bitShift);
+				}
+
+				chunks_[index] = chunks_[count_ - 1] >> bitShift;
+
+				count_ -= chunkShift;
+				count_ -= (chunks_[index] == 0 && count_ > 1) ? 1 : 0;
+			}
+			else
+			{
+				memmove(&chunks_[0], &chunks_[chunkShift], sizeof(uint64_t) * (count_ - chunkShift));
+				count_ -= chunkShift;
+			}
+		}
+
+		uint16_t divideWithRemainder(const BigInteger& other)
+		{
+			if (other.isZero()) {
+				return (uint16_t)(-1);
+			}
+
+			if (count_ < other.count_) {
+				return 0;
+			}
+
+			uint64_t result = 0;
+
+			while (count_ > other.count_)
+			{
+				uint64_t n = chunks_[count_ - 1];
+
+				subtractTimes(other, n);
+
+				result += n;
+			}
+
+			uint64_t a = chunks_[count_ - 1];
+			uint64_t b = other.chunks_[other.count_ - 1];
+
+			if (a > b && b + 1 > b)
+			{
+				uint64_t n = a / (b + 1);
+
+				subtractTimes(other, n);
+
+				result += n;
+			}
+
+			while (compare(other) >= 0)
+			{
+				subtract(other);
+
+				result += 1;
+			}
+
+			return (uint16_t)result;
+		}
+
+		int difference(const BigInteger& other)
+		{
+			int cmp = compare(other);
+
+			if (cmp == 0)
+			{
+				zero();
+				return 0;
+			}
+
+			const BigInteger* a;
+			const BigInteger* b;
+
+			if (cmp < 0)
+			{
+				a = &other;
+				b = this;
+			}
+			else
+			{
+				a = this;
+				b = &other;
+			}
+
+			subtract(a, b, this);
+
+			return cmp;
+		}
+
+		void appendDecimal(const char* str, size_t length)
+		{
+			if (length == (size_t)(-1)) {
+				length = strlen(str);
+			}
+
+			while (length >= 19)
+			{
+				appendDecimal64(str, 19);
+
+				str += 19;
+				length -= 19;
+			}
+
+			if (length) {
+				appendDecimal64(str, length);
+			}
+		}
+
+	private:
+		static void subtract(const BigInteger* a, const BigInteger* b, BigInteger* outResult)
+		{
+			size_t count = max(a->count_, b->count_);
+			uint64_t borrow = 0;
+
+			for (size_t i = 0; i < count; ++i)
+			{
+				uint64_t m = a->at(i);
+				uint64_t n = m - borrow - b->at(i);
+
+				outResult->chunks_[i] = n;
+
+				borrow = ((n > m) || (n == m && borrow)) ? 1 : 0;
+			}
+
+			if (borrow)
+			{
+				memset(&outResult->chunks_[count], 0xff, (max_chunk - count) * sizeof(uint64_t));
+
+				outResult->count_ = max_chunk;
+			}
+			else
+			{
+				outResult->clamp(count);
+			}
+		}
+
+		void appendDecimal64(const char* str, size_t length)
+		{
+			uint64_t n = 0;
+			size_t exp = 0;
+
+			for (size_t i = 0; i < length; ++i)
+			{
+				if (isDigit(*str))
+				{
+					n = n * 10 + (*str - '0');
+					++exp;
+				}
+
+				++str;
+			}
+
+			if (isZero())
+			{
+				assign(n);
+				return;
+			}
+
+			multiplyPow10(exp);
+			add(n);
+		}
+
+		void append(uint64_t n)
+		{
+			if (count_ < max_chunk) {
+				chunks_[count_++] = n;
+			}
+		}
+
+		void clamp(size_t count)
+		{
+			for (count_ = count; count_ > 1; --count_)
+			{
+				if (chunks_[count_ - 1]) {
+					break;
+				}
+			}
+		}
+
+	private:
+		uint64_t chunks_[max_chunk];
+		size_t count_;
+	};
+
+} // detail
 } // eclog
+} // vallest
 
 #include <string.h> // memcpy, memmove, strncmp
 #include <math.h> // ceil
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	static double stringToDoubleApprox(const char* decimals, int length, int decimalPointOff, int exponent)
+	{
+		static const double fastPosTens[] = {
+			1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15
+		};
 
-		static double stringToDoubleApprox(const char* decimals, int length, int decimalPointOff, int exponent)
+		static const double binaryPosTens[] = {
+			1e16, 1e32, 1e64, 1e128, 1e256
+		};
+
+		static const double binaryNegTens[] = {
+			1e-16, 1e-32, 1e-64, 1e-128, 1e-256
+		};
+
+		uint64_t sigDecimals = 0;
+		int count = 0;
+
+		for (int i = 0; i < length && count < 19; ++i)
 		{
-			static const double fastPosTens[] = {
-				1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15
-			};
-
-			static const double binaryPosTens[] = {
-				1e16, 1e32, 1e64, 1e128, 1e256
-			};
-
-			static const double binaryNegTens[] = {
-				1e-16, 1e-32, 1e-64, 1e-128, 1e-256
-			};
-
-			uint64_t sigDecimals = 0;
-			int count = 0;
-
-			for (int i = 0; i < length && count < 19; ++i)
+			if (detail::isDigit(decimals[i]))
 			{
-				if (detail::isDigit(decimals[i]))
-				{
-					sigDecimals = sigDecimals * 10 + (decimals[i] - '0');
-					++count;
-				}
+				sigDecimals = sigDecimals * 10 + (decimals[i] - '0');
+				++count;
 			}
-
-			double b = (double)sigDecimals;
-
-			exponent += decimalPointOff - count;
-
-			if (exponent > 0)
-			{
-				if (exponent & 0xf) {
-					b *= fastPosTens[exponent & 0xf];
-				}
-
-				if (exponent >>= 4)
-				{
-					for (int i = 0; exponent > 0; ++i, exponent >>= 1)
-					{
-						if (exponent & 1) {
-							b *= binaryPosTens[i];
-						}
-					}
-				}
-			}
-			else if (exponent < 0)
-			{
-				exponent = -exponent;
-
-				if (exponent & 0xf) {
-					b /= fastPosTens[exponent & 0xf];
-				}
-
-				if (exponent >>= 4)
-				{
-					for (int i = 0; exponent > 0; ++i, exponent >>= 1)
-					{
-						if (exponent & 1)
-						{
-							b *= binaryNegTens[i];
-						}
-					}
-				}
-			}
-
-			return b;
 		}
 
-		static double stringToDoubleBigInt(double b, const char* decimals, int length, int decimalPointOff, int exponent)
-		{
-			detail::Binary64 b64(b);
+		double b = (double)sigDecimals;
 
-			if (b64.isInfinity()) {
-				b = b64.previousValue();
+		exponent += decimalPointOff - count;
+
+		if (exponent > 0)
+		{
+			if (exponent & 0xf) {
+				b *= fastPosTens[exponent & 0xf];
 			}
 
-			int count = (decimalPointOff > 0 && decimalPointOff < length) ? length - 1 : length;
-
-			for (;;)
+			if (exponent >>= 4)
 			{
-				b64.assign(b);
+				for (int i = 0; exponent > 0; ++i, exponent >>= 1)
+				{
+					if (exponent & 1) {
+						b *= binaryPosTens[i];
+					}
+				}
+			}
+		}
+		else if (exponent < 0)
+		{
+			exponent = -exponent;
 
-				if (b64.isInfinity()) {
+			if (exponent & 0xf) {
+				b /= fastPosTens[exponent & 0xf];
+			}
+
+			if (exponent >>= 4)
+			{
+				for (int i = 0; exponent > 0; ++i, exponent >>= 1)
+				{
+					if (exponent & 1)
+					{
+						b *= binaryNegTens[i];
+					}
+				}
+			}
+		}
+
+		return b;
+	}
+
+	static double stringToDoubleBigInt(double b, const char* decimals, int length, int decimalPointOff, int exponent)
+	{
+		detail::Binary64 b64(b);
+
+		if (b64.isInfinity()) {
+			b = b64.previousValue();
+		}
+
+		int count = (decimalPointOff > 0 && decimalPointOff < length) ? length - 1 : length;
+
+		for (;;)
+		{
+			b64.assign(b);
+
+			if (b64.isInfinity()) {
+				break;
+			}
+
+			detail::BigInteger dInt(decimals, length);
+			int dExp = exponent + decimalPointOff - count;
+
+			detail::BigInteger bInt(b64.significand());
+			int bExp = b64.exponent();
+
+			detail::BigInteger hInt(1);
+			int hExp = bExp - 1;
+
+			int dsExp2 = 0;
+			int dsExp5 = 0;
+			int bsExp2 = 0;
+			int bsExp5 = 0;
+			int hsExp2 = 0;
+			int hsExp5 = 0;
+
+			if (dExp >= 0) {
+				dsExp2 += dExp;
+				dsExp5 += dExp;
+			}
+			else {
+				bsExp2 -= dExp;
+				bsExp5 -= dExp;
+				hsExp2 -= dExp;
+				hsExp5 -= dExp;
+			}
+
+			if (bExp >= 0) {
+				bsExp2 += bExp;
+			}
+			else {
+				dsExp2 -= bExp;
+				hsExp2 -= bExp;
+			}
+
+			if (hExp >= 0) {
+				hsExp2 += hExp;
+			}
+			else {
+				dsExp2 -= hExp;
+				bsExp2 -= hExp;
+			}
+
+			int commonExp2 = detail::min(dsExp2, detail::min(bsExp2, hsExp2));
+
+			dsExp2 -= commonExp2;
+			bsExp2 -= commonExp2;
+			hsExp2 -= commonExp2;
+
+			dInt.multiplyPow5(dsExp5);
+			dInt.multiplyPow2(dsExp2);
+
+			bInt.multiplyPow5(bsExp5);
+			bInt.multiplyPow2(bsExp2);
+
+			hInt.multiplyPow5(hsExp5);
+			hInt.multiplyPow2(hsExp2);
+
+			int cmp = bInt.difference(dInt);
+
+			if (cmp > 0)
+			{
+				if (b64.lowerBoundaryIsCloser()) {
+					hInt.shiftRight(1);
+				}
+
+				cmp = bInt.compare(hInt);
+
+				if (cmp < 0)
+				{
 					break;
 				}
-
-				detail::BigInteger dInt(decimals, length);
-				int dExp = exponent + decimalPointOff - count;
-
-				detail::BigInteger bInt(b64.significand());
-				int bExp = b64.exponent();
-
-				detail::BigInteger hInt(1);
-				int hExp = bExp - 1;
-
-				int dsExp2 = 0;
-				int dsExp5 = 0;
-				int bsExp2 = 0;
-				int bsExp5 = 0;
-				int hsExp2 = 0;
-				int hsExp5 = 0;
-
-				if (dExp >= 0) {
-					dsExp2 += dExp;
-					dsExp5 += dExp;
-				}
-				else {
-					bsExp2 -= dExp;
-					bsExp5 -= dExp;
-					hsExp2 -= dExp;
-					hsExp5 -= dExp;
-				}
-
-				if (bExp >= 0) {
-					bsExp2 += bExp;
-				}
-				else {
-					dsExp2 -= bExp;
-					hsExp2 -= bExp;
-				}
-
-				if (hExp >= 0) {
-					hsExp2 += hExp;
-				}
-				else {
-					dsExp2 -= hExp;
-					bsExp2 -= hExp;
-				}
-
-				int commonExp2 = detail::min(dsExp2, detail::min(bsExp2, hsExp2));
-
-				dsExp2 -= commonExp2;
-				bsExp2 -= commonExp2;
-				hsExp2 -= commonExp2;
-
-				dInt.multiplyPow5(dsExp5);
-				dInt.multiplyPow2(dsExp2);
-
-				bInt.multiplyPow5(bsExp5);
-				bInt.multiplyPow2(bsExp2);
-
-				hInt.multiplyPow5(hsExp5);
-				hInt.multiplyPow2(hsExp2);
-
-				int cmp = bInt.difference(dInt);
-
-				if (cmp > 0)
+				else if (cmp == 0)
 				{
-					if (b64.lowerBoundaryIsCloser()) {
-						hInt.shiftRight(1);
-					}
-
-					cmp = bInt.compare(hInt);
-
-					if (cmp < 0)
-					{
-						break;
-					}
-					else if (cmp == 0)
-					{
-						if (b64.significand() & 1) {
-							b = b64.previousValue();
-						}
-
-						break;
-					}
-					else
-					{
+					if (b64.significand() & 1) {
 						b = b64.previousValue();
 					}
-				}
-				else if (cmp < 0)
-				{
-					cmp = bInt.compare(hInt);
 
-					if (cmp < 0)
-					{
-						break;
-					}
-					else if (cmp == 0)
-					{
-						if (b64.significand() & 1) {
-							b = b64.nextValue();
-						}
-
-						break;
-					}
-					else
-					{
-						b = b64.nextValue();
-					}
+					break;
 				}
 				else
 				{
-					break;
+					b = b64.previousValue();
 				}
 			}
+			else if (cmp < 0)
+			{
+				cmp = bInt.compare(hInt);
 
-			return b;
+				if (cmp < 0)
+				{
+					break;
+				}
+				else if (cmp == 0)
+				{
+					if (b64.significand() & 1) {
+						b = b64.nextValue();
+					}
+
+					break;
+				}
+				else
+				{
+					b = b64.nextValue();
+				}
+			}
+			else
+			{
+				break;
+			}
 		}
 
-		double stringToDouble(const char* str, const char** outStr, int* outError)
+		return b;
+	}
+
+	double stringToDouble(const char* str, const char** outStr, int* outError)
+	{
+		bool negative = false;
+
+		if (*str == '-')
 		{
-			bool negative = false;
+			negative = true;
+			++str;
+		}
+		else if (*str == '+')
+		{
+			++str;
+		}
+
+		if (strncmp(str, "inf", 3) == 0)
+		{
+			if (outStr) {
+				*outStr = str + 3;
+			}
+
+			return negative ? detail::Binary64::negInfinity() : detail::Binary64::infinity();
+		}
+		else if (strncmp(str, "nan", 3) == 0)
+		{
+			if (outStr) {
+				*outStr = str + 3;
+			}
+
+			return negative ? detail::Binary64::negNan() : detail::Binary64::nan();
+		}
+
+		const char* decimals = 0;
+		const char* decimalPoint = 0;
+
+		for (;;)
+		{
+			if (detail::isDigit(*str))
+			{
+				if (decimals == 0 && *str != '0') {
+					decimals = str;
+				}
+
+				++str;
+			}
+			else if (*str == '.' && decimalPoint == 0)
+			{
+				decimalPoint = str;
+				++str;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		int length = decimals ? (int)(str - decimals) : 0;
+
+		int decimalPointOff;
+
+		if (decimalPoint && decimals)
+		{
+			if (decimalPoint < decimals) {
+				decimalPointOff = (int)(decimalPoint - decimals + 1);
+			}
+			else {
+				decimalPointOff = (int)(decimalPoint - decimals);
+			}
+		}
+		else
+		{
+			decimalPointOff = length;
+		}
+
+		const int maxLength = (decimalPointOff > 0 && decimalPointOff < 780) ? 781 : 780;
+
+		if (length > maxLength) {
+			length = maxLength;
+		}
+
+		if (length > 0)
+		{
+			while (decimals[length - 1] == '0' || decimals[length - 1] == '.') {
+				--length;
+			}
+		}
+
+		if (length == 0)
+		{
+			if (outStr) {
+				*outStr = str;
+			}
+
+			return negative ? -0.0 : 0.0;
+		}
+
+		const int minExp = -324 - decimalPointOff + 1;
+		const int maxExp = 308 - decimalPointOff + 1;
+
+		int exponent = 0;
+
+		if (*str == 'e' || *str == 'E')
+		{
+			++str;
+
+			bool negExp = false;
 
 			if (*str == '-')
 			{
-				negative = true;
+				negExp = true;
 				++str;
 			}
 			else if (*str == '+')
@@ -1109,39 +1213,50 @@ namespace eclog {
 				++str;
 			}
 
-			if (strncmp(str, "inf", 3) == 0)
-			{
-				if (outStr) {
-					*outStr = str + 3;
-				}
-
-				return negative ? detail::Binary64::negInfinity() : detail::Binary64::infinity();
-			}
-			else if (strncmp(str, "nan", 3) == 0)
-			{
-				if (outStr) {
-					*outStr = str + 3;
-				}
-
-				return negative ? detail::Binary64::negNan() : detail::Binary64::nan();
-			}
-
-			const char* decimals = 0;
-			const char* decimalPoint = 0;
+			const int n = negExp ? minExp / 10 : maxExp / 10;
+			const int m = negExp ? -(minExp % 10) : maxExp % 10;
 
 			for (;;)
 			{
 				if (detail::isDigit(*str))
 				{
-					if (decimals == 0 && *str != '0') {
-						decimals = str;
+					char d = *str - '0';
+
+					if (negExp)
+					{
+						if (exponent < n || (exponent == n && d > m))
+						{
+							if (outStr) {
+								*outStr = str;
+							}
+
+							if (outError) {
+								*outError = -1;
+							}
+
+							return negative ? -0.0 : 0.0;
+						}
+
+						exponent = exponent * 10 - d;
+					}
+					else
+					{
+						if (exponent > n || (exponent == n && d > m))
+						{
+							if (outStr) {
+								*outStr = str;
+							}
+
+							if (outError) {
+								*outError = 1;
+							}
+
+							return negative ? detail::Binary64::negInfinity() : detail::Binary64::infinity();
+						}
+
+						exponent = exponent * 10 + d;
 					}
 
-					++str;
-				}
-				else if (*str == '.' && decimalPoint == 0)
-				{
-					decimalPoint = str;
 					++str;
 				}
 				else
@@ -1149,822 +1264,711 @@ namespace eclog {
 					break;
 				}
 			}
+		}
 
-			int length = decimals ? (int)(str - decimals) : 0;
+		double b = stringToDoubleApprox(decimals, length, decimalPointOff, exponent);
 
-			int decimalPointOff;
+		b = stringToDoubleBigInt(b, decimals, length, decimalPointOff, exponent);
 
-			if (decimalPoint && decimals)
+		if (outStr) {
+			*outStr = str;
+		}
+
+		if (b == 0.0)
+		{
+			if (outError) {
+				*outError = -1;
+			}
+		}
+		else if (detail::Binary64(b).isInfinity())
+		{
+			if (outError) {
+				*outError = 1;
+			}
+		}
+
+		return negative ? -b : b;
+	}
+
+	static int estimatePower(const detail::Binary64& b64)
+	{
+		uint64_t significand = b64.significand();
+		int exponent = b64.exponent();
+
+		while ((significand & detail::Binary64::hidden_bit) == 0)
+		{
+			significand = significand << 1;
+			--exponent;
+		}
+
+		double log2 = 0.3010299956639812;
+		double result = log2 * (detail::Binary64::significand_size - 1 + exponent) - 1e-5;
+
+		return (int)ceil(result);
+	}
+
+	static void initValues(double d, detail::BigInteger& numerator, detail::BigInteger& denominator,
+		detail::BigInteger& deltaMinus, detail::BigInteger& deltaPlus, int& power)
+	{
+		detail::Binary64 b64(d);
+
+		power = estimatePower(b64);
+
+		if (b64.exponent() > 0)
+		{
+			numerator.assign(b64.significand());
+			numerator.multiplyPow2(b64.exponent());
+
+			denominator.assign(1);
+			denominator.multiplyPow10(power);
+
+			numerator.shiftLeft(1);
+			denominator.shiftLeft(1);
+
+			deltaMinus.assign(1);
+			deltaMinus.multiplyPow2(b64.exponent());
+
+			deltaPlus.assign(1);
+			deltaPlus.multiplyPow2(b64.exponent());
+		}
+		else if (power > 0)
+		{
+			numerator.assign(b64.significand());
+
+			denominator.assign(1);
+			denominator.multiplyPow5(power);
+			denominator.multiplyPow2(-b64.exponent() + power);
+
+			numerator.shiftLeft(1);
+			denominator.shiftLeft(1);
+
+			deltaMinus.assign(1);
+			deltaPlus.assign(1);
+		}
+		else
+		{
+			numerator.assign(1);
+			numerator.multiplyPow10(-power);
+
+			deltaMinus.assign(numerator);
+			deltaPlus.assign(numerator);
+
+			numerator.multiply(b64.significand());
+
+			denominator.assign(1);
+			denominator.multiplyPow2(-b64.exponent());
+
+			numerator.shiftLeft(1);
+			denominator.shiftLeft(1);
+		}
+
+		if (b64.lowerBoundaryIsCloser())
+		{
+			numerator.shiftLeft(1);
+			denominator.shiftLeft(1);
+			deltaPlus.shiftLeft(1);
+		}
+
+		bool isEven = (b64.significand() & 1) == 0;
+
+		bool inRange;
+
+		if (isEven) {
+			inRange = numerator.plusCompare(deltaPlus, denominator) >= 0;
+		}
+		else {
+			inRange = numerator.plusCompare(deltaPlus, denominator) > 0;
+		}
+
+		if (!inRange)
+		{
+			numerator.multiply(10);
+			deltaMinus.multiply(10);
+			deltaPlus.multiply(10);
+
+			power = power - 1;
+		}
+	}
+
+	static int selectNotation(int power)
+	{
+		return (power >= -4 && power < 17) ? 1 : 0;
+	}
+
+	static void formatDecimal(char* buffer, int& count, int power)
+	{
+		if (count == 0)
+		{
+			memcpy(buffer, "0", 2);
+			count = 1;
+			return;
+		}
+		else if (count == 1 && buffer[0] == '0')
+		{
+			return;
+		}
+
+		if (power < 0)
+		{
+			int n = 1 - power;
+
+			memmove(buffer + n, buffer, count + 1);
+
+			buffer[0] = '0';
+			buffer[1] = '.';
+
+			for (int i = 2; i < n; ++i) {
+				buffer[i] = '0';
+			}
+
+			count += n;
+		}
+		else
+		{
+			int n = power + 1;
+
+			if (n < count)
 			{
-				if (decimalPoint < decimals) {
-					decimalPointOff = (int)(decimalPoint - decimals + 1);
+				memmove(buffer + n + 1, buffer + n, ++count - n);
+
+				buffer[n] = '.';
+			}
+			else if (n > count)
+			{
+				for (; count < n; ++count) {
+					buffer[count] = '0';
 				}
-				else {
-					decimalPointOff = (int)(decimalPoint - decimals);
-				}
+
+				buffer[count] = 0;
+			}
+		}
+	}
+
+	static void formatExponent(char* buffer, int& count, int power)
+	{
+		if (count == 0)
+		{
+			memcpy(buffer, "0", 2);
+			count = 1;
+			return;
+		}
+		else if (count == 1 && buffer[0] == '0')
+		{
+			return;
+		}
+
+		if (count > 1)
+		{
+			memmove(buffer + 2, buffer + 1, count - 1);
+			buffer[1] = '.';
+			count += 1;
+		}
+
+		buffer[count++] = 'e';
+
+		if (power < 0)
+		{
+			buffer[count++] = '-';
+			power = -power;
+		}
+
+		size_t p = count;
+
+		while (power)
+		{
+			int digit = power % 10;
+
+			memmove(buffer + p + 1, buffer + p, count - p);
+
+			buffer[p] = (char)digit + '0';
+
+			power /= 10;
+			count += 1;
+		}
+
+		buffer[count] = 0;
+	}
+
+	static int generateDigits(int requestedDigits, detail::BigInteger& numerator, detail::BigInteger& denominator,
+		detail::BigInteger& deltaMinus, detail::BigInteger& deltaPlus, bool isEven, char* buffer)
+	{
+		int count = 0;
+
+		while (count < requestedDigits)
+		{
+			uint16_t q = numerator.divideWithRemainder(denominator);
+
+			buffer[count++] = (char)q + '0';
+
+			bool inDeltaRoomMinus;
+			bool inDeltaRoomPlus;
+
+			if (isEven)
+			{
+				inDeltaRoomMinus = numerator.compare(deltaMinus) <= 0;
+				inDeltaRoomPlus = numerator.plusCompare(deltaPlus, denominator) >= 0;
 			}
 			else
 			{
-				decimalPointOff = length;
+				inDeltaRoomMinus = numerator.compare(deltaMinus) < 0;
+				inDeltaRoomPlus = numerator.plusCompare(deltaPlus, denominator) > 0;
 			}
 
-			const int maxLength = (decimalPointOff > 0 && decimalPointOff < 780) ? 781 : 780;
-
-			if (length > maxLength) {
-				length = maxLength;
-			}
-
-			if (length > 0)
+			if (inDeltaRoomMinus && inDeltaRoomPlus)
 			{
-				while (decimals[length - 1] == '0' || decimals[length - 1] == '.') {
-					--length;
-				}
-			}
+				int n = numerator.plusCompare(numerator, denominator);
 
-			if (length == 0)
-			{
-				if (outStr) {
-					*outStr = str;
-				}
-
-				return negative ? -0.0 : 0.0;
-			}
-
-			const int minExp = -324 - decimalPointOff + 1;
-			const int maxExp = 308 - decimalPointOff + 1;
-
-			int exponent = 0;
-
-			if (*str == 'e' || *str == 'E')
-			{
-				++str;
-
-				bool negExp = false;
-
-				if (*str == '-')
+				if (n > 0)
 				{
-					negExp = true;
-					++str;
+					++buffer[count - 1];
 				}
-				else if (*str == '+')
+				else if (n == 0)
 				{
-					++str;
-				}
-
-				const int n = negExp ? minExp / 10 : maxExp / 10;
-				const int m = negExp ? -(minExp % 10) : maxExp % 10;
-
-				for (;;)
-				{
-					if (detail::isDigit(*str))
-					{
-						char d = *str - '0';
-
-						if (negExp)
-						{
-							if (exponent < n || (exponent == n && d > m))
-							{
-								if (outStr) {
-									*outStr = str;
-								}
-
-								if (outError) {
-									*outError = -1;
-								}
-
-								return negative ? -0.0 : 0.0;
-							}
-
-							exponent = exponent * 10 - d;
-						}
-						else
-						{
-							if (exponent > n || (exponent == n && d > m))
-							{
-								if (outStr) {
-									*outStr = str;
-								}
-
-								if (outError) {
-									*outError = 1;
-								}
-
-								return negative ? detail::Binary64::negInfinity() : detail::Binary64::infinity();
-							}
-
-							exponent = exponent * 10 + d;
-						}
-
-						++str;
-					}
-					else
-					{
-						break;
+					if ((buffer[count - 1] - '0') % 2) {
+						++buffer[count - 1];
 					}
 				}
+
+				break;
 			}
-
-			double b = stringToDoubleApprox(decimals, length, decimalPointOff, exponent);
-
-			b = stringToDoubleBigInt(b, decimals, length, decimalPointOff, exponent);
-
-			if (outStr) {
-				*outStr = str;
-			}
-
-			if (b == 0.0)
+			else if (inDeltaRoomMinus)
 			{
-				if (outError) {
-					*outError = -1;
-				}
+				break;
 			}
-			else if (detail::Binary64(b).isInfinity())
+			else if (inDeltaRoomPlus)
 			{
-				if (outError) {
-					*outError = 1;
-				}
-			}
+				++buffer[count - 1];
 
-			return negative ? -b : b;
-		}
-
-		static int estimatePower(const detail::Binary64& b64)
-		{
-			uint64_t significand = b64.significand();
-			int exponent = b64.exponent();
-
-			while ((significand & detail::Binary64::hidden_bit) == 0)
-			{
-				significand = significand << 1;
-				--exponent;
-			}
-
-			double log2 = 0.3010299956639812;
-			double result = log2 * (detail::Binary64::significand_size - 1 + exponent) - 1e-5;
-
-			return (int)ceil(result);
-		}
-
-		static void initValues(double d, detail::BigInteger& numerator, detail::BigInteger& denominator,
-			detail::BigInteger& deltaMinus, detail::BigInteger& deltaPlus, int& power)
-		{
-			detail::Binary64 b64(d);
-
-			power = estimatePower(b64);
-
-			if (b64.exponent() > 0)
-			{
-				numerator.assign(b64.significand());
-				numerator.multiplyPow2(b64.exponent());
-
-				denominator.assign(1);
-				denominator.multiplyPow10(power);
-
-				numerator.shiftLeft(1);
-				denominator.shiftLeft(1);
-
-				deltaMinus.assign(1);
-				deltaMinus.multiplyPow2(b64.exponent());
-
-				deltaPlus.assign(1);
-				deltaPlus.multiplyPow2(b64.exponent());
-			}
-			else if (power > 0)
-			{
-				numerator.assign(b64.significand());
-
-				denominator.assign(1);
-				denominator.multiplyPow5(power);
-				denominator.multiplyPow2(-b64.exponent() + power);
-
-				numerator.shiftLeft(1);
-				denominator.shiftLeft(1);
-
-				deltaMinus.assign(1);
-				deltaPlus.assign(1);
+				break;
 			}
 			else
-			{
-				numerator.assign(1);
-				numerator.multiplyPow10(-power);
-
-				deltaMinus.assign(numerator);
-				deltaPlus.assign(numerator);
-
-				numerator.multiply(b64.significand());
-
-				denominator.assign(1);
-				denominator.multiplyPow2(-b64.exponent());
-
-				numerator.shiftLeft(1);
-				denominator.shiftLeft(1);
-			}
-
-			if (b64.lowerBoundaryIsCloser())
-			{
-				numerator.shiftLeft(1);
-				denominator.shiftLeft(1);
-				deltaPlus.shiftLeft(1);
-			}
-
-			bool isEven = (b64.significand() & 1) == 0;
-
-			bool inRange;
-
-			if (isEven) {
-				inRange = numerator.plusCompare(deltaPlus, denominator) >= 0;
-			}
-			else {
-				inRange = numerator.plusCompare(deltaPlus, denominator) > 0;
-			}
-
-			if (!inRange)
 			{
 				numerator.multiply(10);
 				deltaMinus.multiply(10);
 				deltaPlus.multiply(10);
-
-				power = power - 1;
 			}
 		}
 
-		static int selectNotation(int power)
-		{
-			return (power >= -4 && power < 17) ? 1 : 0;
+		buffer[count] = 0;
+
+		return count;
+	}
+
+	static void round(char* buffer, int& count, int& power)
+	{
+		if (count <= 0) {
+			return;
 		}
 
-		static void formatDecimal(char* buffer, int& count, int power)
+		int n = buffer[count - 1] - '5';
+
+		buffer[--count] = 0;
+
+		int carry = (n >= 0) ? 1 : 0;
+
+		if (count || carry)
 		{
-			if (count == 0)
+			for (int i = count - 1; i >= 0; --i)
 			{
-				memcpy(buffer, "0", 2);
-				count = 1;
-				return;
-			}
-			else if (count == 1 && buffer[0] == '0')
-			{
-				return;
-			}
-
-			if (power < 0)
-			{
-				int n = 1 - power;
-
-				memmove(buffer + n, buffer, count + 1);
-
-				buffer[0] = '0';
-				buffer[1] = '.';
-
-				for (int i = 2; i < n; ++i) {
-					buffer[i] = '0';
-				}
-
-				count += n;
-			}
-			else
-			{
-				int n = power + 1;
-
-				if (n < count)
-				{
-					memmove(buffer + n + 1, buffer + n, ++count - n);
-
-					buffer[n] = '.';
-				}
-				else if (n > count)
-				{
-					for (; count < n; ++count) {
-						buffer[count] = '0';
-					}
-
-					buffer[count] = 0;
-				}
-			}
-		}
-
-		static void formatExponent(char* buffer, int& count, int power)
-		{
-			if (count == 0)
-			{
-				memcpy(buffer, "0", 2);
-				count = 1;
-				return;
-			}
-			else if (count == 1 && buffer[0] == '0')
-			{
-				return;
-			}
-
-			if (count > 1)
-			{
-				memmove(buffer + 2, buffer + 1, count - 1);
-				buffer[1] = '.';
-				count += 1;
-			}
-
-			buffer[count++] = 'e';
-
-			if (power < 0)
-			{
-				buffer[count++] = '-';
-				power = -power;
-			}
-
-			size_t p = count;
-
-			while (power)
-			{
-				int digit = power % 10;
-
-				memmove(buffer + p + 1, buffer + p, count - p);
-
-				buffer[p] = (char)digit + '0';
-
-				power /= 10;
-				count += 1;
-			}
-
-			buffer[count] = 0;
-		}
-
-		static int generateDigits(int requestedDigits, detail::BigInteger& numerator, detail::BigInteger& denominator,
-			detail::BigInteger& deltaMinus, detail::BigInteger& deltaPlus, bool isEven, char* buffer)
-		{
-			int count = 0;
-
-			while (count < requestedDigits)
-			{
-				uint16_t q = numerator.divideWithRemainder(denominator);
-
-				buffer[count++] = (char)q + '0';
-
-				bool inDeltaRoomMinus;
-				bool inDeltaRoomPlus;
-
-				if (isEven)
-				{
-					inDeltaRoomMinus = numerator.compare(deltaMinus) <= 0;
-					inDeltaRoomPlus = numerator.plusCompare(deltaPlus, denominator) >= 0;
-				}
-				else
-				{
-					inDeltaRoomMinus = numerator.compare(deltaMinus) < 0;
-					inDeltaRoomPlus = numerator.plusCompare(deltaPlus, denominator) > 0;
-				}
-
-				if (inDeltaRoomMinus && inDeltaRoomPlus)
-				{
-					int n = numerator.plusCompare(numerator, denominator);
-
-					if (n > 0)
-					{
-						++buffer[count - 1];
-					}
-					else if (n == 0)
-					{
-						if ((buffer[count - 1] - '0') % 2) {
-							++buffer[count - 1];
-						}
-					}
-
-					break;
-				}
-				else if (inDeltaRoomMinus)
-				{
-					break;
-				}
-				else if (inDeltaRoomPlus)
-				{
-					++buffer[count - 1];
-
-					break;
-				}
-				else
-				{
-					numerator.multiply(10);
-					deltaMinus.multiply(10);
-					deltaPlus.multiply(10);
-				}
-			}
-
-			buffer[count] = 0;
-
-			return count;
-		}
-
-		static void round(char* buffer, int& count, int& power)
-		{
-			if (count <= 0) {
-				return;
-			}
-
-			int n = buffer[count - 1] - '5';
-
-			buffer[--count] = 0;
-
-			int carry = (n >= 0) ? 1 : 0;
-
-			if (count || carry)
-			{
-				for (int i = count - 1; i >= 0; --i)
-				{
-					if (carry)
-					{
-						if (++buffer[i] - '0' == 10) {
-							buffer[i] = '0';
-						}
-						else {
-							carry = 0;
-						}
-					}
-					else
-					{
-						break;
-					}
-				}
-
 				if (carry)
 				{
-					memmove(buffer + 1, buffer, count + 1);
-					buffer[0] = '1';
-					++count;
-					++power;
+					if (++buffer[i] - '0' == 10) {
+						buffer[i] = '0';
+					}
+					else {
+						carry = 0;
+					}
+				}
+				else
+				{
+					break;
 				}
 			}
-			else
+
+			if (carry)
 			{
+				memmove(buffer + 1, buffer, count + 1);
+				buffer[0] = '1';
+				++count;
 				++power;
-				return;
-			}
-
-			if (power > 308 || (power == 308 && strncmp(buffer, "17976931348623158", count) > 0))
-			{
-				memcpy(buffer, "17976931348623158", count);
-				power = 308;
 			}
 		}
-
-		static void trimTrailingZeros(char* buffer, int& count)
+		else
 		{
-			while (count > 1 && buffer[count - 1] == '0') {
-				buffer[--count] = 0;
-			}
+			++power;
+			return;
 		}
 
-		void doubleToString(double d, char* buffer, int fracDigits)
+		if (power > 308 || (power == 308 && strncmp(buffer, "17976931348623158", count) > 0))
 		{
-			int count;
+			memcpy(buffer, "17976931348623158", count);
+			power = 308;
+		}
+	}
 
-			if (d == 0.0)
+	static void trimTrailingZeros(char* buffer, int& count)
+	{
+		while (count > 1 && buffer[count - 1] == '0') {
+			buffer[--count] = 0;
+		}
+	}
+
+	void doubleToString(double d, char* buffer, int fracDigits)
+	{
+		int count;
+
+		if (d == 0.0)
+		{
+			memcpy(buffer, "0", 2);
+			count = 1;
+		}
+		else if (detail::Binary64(d).isInfinity())
+		{
+			memcpy(buffer, "inf", 4);
+			count = 3;
+		}
+		else if (detail::Binary64(d).isNan())
+		{
+			memcpy(buffer, "nan", 4);
+			count = 3;
+		}
+		else
+		{
+			bool isEven = (detail::Binary64(d).significand() & 1) == 0;
+
+			detail::BigInteger numerator;
+			detail::BigInteger denominator;
+			detail::BigInteger deltaMinus;
+			detail::BigInteger deltaPlus;
+
+			int power;
+
+			initValues(detail::Binary64(d).sign() < 0 ? -d : d, numerator, denominator, deltaMinus, deltaPlus, power);
+
+			int requestedDigits;
+
+			if (fracDigits < 0) {
+				requestedDigits = 17;
+			}
+			else if (selectNotation(power)) {
+				requestedDigits = power + fracDigits + 1;
+			}
+			else {
+				requestedDigits = fracDigits + 1;
+			}
+
+			if (requestedDigits < 0)
 			{
 				memcpy(buffer, "0", 2);
 				count = 1;
 			}
-			else if (detail::Binary64(d).isInfinity())
-			{
-				memcpy(buffer, "inf", 4);
-				count = 3;
-			}
-			else if (detail::Binary64(d).isNan())
-			{
-				memcpy(buffer, "nan", 4);
-				count = 3;
-			}
 			else
 			{
-				bool isEven = (detail::Binary64(d).significand() & 1) == 0;
+				count = generateDigits(requestedDigits + 1, numerator, denominator, deltaMinus, deltaPlus, isEven, buffer);
 
-				detail::BigInteger numerator;
-				detail::BigInteger denominator;
-				detail::BigInteger deltaMinus;
-				detail::BigInteger deltaPlus;
-
-				int power;
-
-				initValues(detail::Binary64(d).sign() < 0 ? -d : d, numerator, denominator, deltaMinus, deltaPlus, power);
-
-				int requestedDigits;
-
-				if (fracDigits < 0) {
-					requestedDigits = 17;
+				if (count > requestedDigits) {
+					round(buffer, count, power);
 				}
-				else if (selectNotation(power)) {
-					requestedDigits = power + fracDigits + 1;
+
+				trimTrailingZeros(buffer, count);
+
+				if (selectNotation(power)) {
+					formatDecimal(buffer, count, power);
 				}
 				else {
-					requestedDigits = fracDigits + 1;
+					formatExponent(buffer, count, power);
 				}
-
-				if (requestedDigits < 0)
-				{
-					memcpy(buffer, "0", 2);
-					count = 1;
-				}
-				else
-				{
-					count = generateDigits(requestedDigits + 1, numerator, denominator, deltaMinus, deltaPlus, isEven, buffer);
-
-					if (count > requestedDigits) {
-						round(buffer, count, power);
-					}
-
-					trimTrailingZeros(buffer, count);
-
-					if (selectNotation(power)) {
-						formatDecimal(buffer, count, power);
-					}
-					else {
-						formatExponent(buffer, count, power);
-					}
-				}
-			}
-
-			if (detail::Binary64(d).sign() < 0)
-			{
-				memmove(buffer + 1, buffer, count + 1);
-				buffer[0] = '-';
 			}
 		}
 
-	} // detail
+		if (detail::Binary64(d).sign() < 0)
+		{
+			memmove(buffer + 1, buffer, count + 1);
+			buffer[0] = '-';
+		}
+	}
 
+} // detail
 } // eclog
+} // vallest
 
 #include <string.h> // memmove, memset
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	int UTF8Decoder::decode(ErrorCode* ec)
+	{
+		static const char length[32] = {
+			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+			0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0,
+		};
 
-		int UTF8Decoder::decode(ErrorCode* ec)
+		static const char mask[5] = { 0, 0x7f, 0x1f, 0x0f, 0x07 };
+		static const char shift[5] = { 0, 18, 12, 6, 0 };
+		static const int min[5] = { 2097152, 0, 128, 2048, 65536 };
+		static const char shifte[5] = { 0, 6, 4, 2, 0 };
+
+		if (avail_ < 4)
 		{
-			static const char length[32] = {
-				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-				0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0,
-			};
+			memmove(buffer_, p_, avail_);
+			p_ = buffer_;
 
-			static const char mask[5] = { 0, 0x7f, 0x1f, 0x0f, 0x07 };
-			static const char shift[5] = { 0, 18, 12, 6, 0 };
-			static const int min[5] = { 2097152, 0, 128, 2048, 65536 };
-			static const char shifte[5] = { 0, 6, 4, 2, 0 };
-
-			if (avail_ < 4)
+			if (is_.eof())
 			{
-				memmove(buffer_, p_, avail_);
-				p_ = buffer_;
-
-				if (is_.eof())
-				{
-					if (avail_ == 0) {
-						return -1;
-					}
-
-					memset(buffer_ + avail_, 0, 4 - avail_);
+				if (avail_ == 0) {
+					return -1;
 				}
-				else
+
+				memset(buffer_ + avail_, 0, 4 - avail_);
+			}
+			else
+			{
+				while (avail_ < 4)
 				{
-					while (avail_ < 4)
+					size_t free = detail::arraySize(buffer_) - avail_;
+
+					size_t read = is_.read((char*)buffer_ + avail_, free);
+
+					avail_ += read;
+
+					if (!is_.state())
 					{
-						size_t free = detail::arraySize(buffer_) - avail_;
-
-						size_t read = is_.read((char*)buffer_ + avail_, free);
-
-						avail_ += read;
-
-						if (!is_.state())
+						if (is_.eof())
 						{
-							if (is_.eof())
-							{
-								if (avail_ == 0) {
-									return -1;
-								}
-
-								if (avail_ < 4)
-								{
-									memset(buffer_ + avail_, 0, 4 - avail_);
-								}
-
-								break;
+							if (avail_ == 0) {
+								return -1;
 							}
-							else
+
+							if (avail_ < 4)
 							{
-								ECLOG_ERROR(IOError);
-								return -2;
+								memset(buffer_ + avail_, 0, 4 - avail_);
 							}
+
+							break;
+						}
+						else
+						{
+							ECLOG_ERROR(IOError);
+							return -2;
 						}
 					}
 				}
 			}
-
-			int n = length[p_[0] >> 3];
-
-			int code = (p_[0] & mask[n]) << 18;
-			code |= (p_[1] & 0x3f) << 12;
-			code |= (p_[2] & 0x3f) << 6;
-			code |= (p_[3] & 0x3f) << 0;
-			code >>= shift[n];
-
-			int error = (code < min[n]) << 7;
-			error |= ((code >> 11) == 0x1b) << 6; // surrogate character (U+D800-U+DFFF) ?
-			error |= (p_[1] & 0xc0) >> 2;
-			error |= (p_[2] & 0xc0) >> 4;
-			error |= (p_[3]) >> 6;
-			error ^= 0x2a;
-			error >>= shifte[n];
-
-			if (error)
-			{
-				ECLOG_ERROR(DecodeError);
-				return -2;
-			}
-
-			p_ += n;
-			avail_ -= n;
-
-			return code;
 		}
 
-	} // detail
+		int n = length[p_[0] >> 3];
 
-} // eclog
+		int code = (p_[0] & mask[n]) << 18;
+		code |= (p_[1] & 0x3f) << 12;
+		code |= (p_[2] & 0x3f) << 6;
+		code |= (p_[3] & 0x3f) << 0;
+		code >>= shift[n];
 
-namespace eclog {
+		int error = (code < min[n]) << 7;
+		error |= ((code >> 11) == 0x1b) << 6; // surrogate character (U+D800-U+DFFF) ?
+		error |= (p_[1] & 0xc0) >> 2;
+		error |= (p_[2] & 0xc0) >> 4;
+		error |= (p_[3]) >> 6;
+		error ^= 0x2a;
+		error >>= shifte[n];
 
-	namespace detail {
-
-		void UTF8Encoder::encode(int ch, ErrorCode* ec)
+		if (error)
 		{
-			char bytes[4];
-			int n = 0;
-
-			if (ch < 128)
-			{
-				n = 1;
-				bytes[0] = (char)ch;
-			}
-			else if (ch < 2048)
-			{
-				n = 2;
-				bytes[0] = (char)(0xc0 | (ch >> 6));
-				bytes[1] = (char)(0x80 | (ch & 0x3f));
-			}
-			else if (ch < 65536)
-			{
-				n = 3;
-				bytes[0] = (char)(0xe0 | (ch >> 12));
-				bytes[1] = (char)(0x80 | ((ch >> 6) & 0x3f));
-				bytes[2] = (char)(0x80 | (ch & 0x3f));
-			}
-			else if (ch < 2097152)
-			{
-				n = 4;
-				bytes[0] = (char)(0xf0 | (ch >> 18));
-				bytes[1] = (char)(0x80 | ((ch >> 12) & 0x3f));
-				bytes[2] = (char)(0x80 | ((ch >> 6) & 0x3f));
-				bytes[3] = (char)(0x80 | (ch & 0x3f));
-			}
-
-			int error = (n == 0) << 1;
-			error |= ((ch >> 11) == 0x1b) << 0; // surrogate character (U+D800-U+DFFF) ?
-
-			if (error)
-			{
-				ECLOG_ERROR(EncodeError);
-				return;
-			}
-
-			os_.write(bytes, n);
-
-			if (!os_.state())
-			{
-				ECLOG_ERROR(IOError);
-				return;
-			}
+			ECLOG_ERROR(DecodeError);
+			return -2;
 		}
 
-	} // detail
+		p_ += n;
+		avail_ -= n;
 
+		return code;
+	}
+
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
+namespace eclog {
+namespace detail {
+
+	void UTF8Encoder::encode(int ch, ErrorCode* ec)
+	{
+		char bytes[4];
+		int n = 0;
+
+		if (ch < 128)
+		{
+			n = 1;
+			bytes[0] = (char)ch;
+		}
+		else if (ch < 2048)
+		{
+			n = 2;
+			bytes[0] = (char)(0xc0 | (ch >> 6));
+			bytes[1] = (char)(0x80 | (ch & 0x3f));
+		}
+		else if (ch < 65536)
+		{
+			n = 3;
+			bytes[0] = (char)(0xe0 | (ch >> 12));
+			bytes[1] = (char)(0x80 | ((ch >> 6) & 0x3f));
+			bytes[2] = (char)(0x80 | (ch & 0x3f));
+		}
+		else if (ch < 2097152)
+		{
+			n = 4;
+			bytes[0] = (char)(0xf0 | (ch >> 18));
+			bytes[1] = (char)(0x80 | ((ch >> 12) & 0x3f));
+			bytes[2] = (char)(0x80 | ((ch >> 6) & 0x3f));
+			bytes[3] = (char)(0x80 | (ch & 0x3f));
+		}
+
+		int error = (n == 0) << 1;
+		error |= ((ch >> 11) == 0x1b) << 0; // surrogate character (U+D800-U+DFFF) ?
+
+		if (error)
+		{
+			ECLOG_ERROR(EncodeError);
+			return;
+		}
+
+		os_.write(bytes, n);
+
+		if (!os_.state())
+		{
+			ECLOG_ERROR(IOError);
+			return;
+		}
+	}
+
+} // detail
+} // eclog
+} // vallest
+
+namespace vallest {
 namespace eclog {
 
 	Null null;
 
 } // eclog
+} //vallest
 
 #include <stddef.h> // size_t
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<typename T, size_t MaxSize>
+	class InlineStack {
+	public:
+		InlineStack() : size_(0)
+		{
+		}
 
-		template<typename T, size_t MaxSize>
-		class InlineStack {
-		public:
-			InlineStack() : size_(0)
-			{
-			}
+		size_t maxSize() const
+		{
+			return MaxSize;
+		}
 
-			size_t maxSize() const
-			{
-				return MaxSize;
-			}
+		size_t size() const
+		{
+			return size_;
+		}
 
-			size_t size() const
-			{
-				return size_;
-			}
+		T& top()
+		{
+			ECLOG_ASSERT(size_ > 0 && size_ <= MaxSize);
+			return stack_[size_ - 1];
+		}
 
-			T& top()
-			{
-				ECLOG_ASSERT(size_ > 0 && size_ <= MaxSize);
-				return stack_[size_ - 1];
-			}
+		const T& top() const
+		{
+			ECLOG_ASSERT(size_ > 0 && size_ <= MaxSize);
+			return stack_[size_ - 1];
+		}
 
-			const T& top() const
-			{
-				ECLOG_ASSERT(size_ > 0 && size_ <= MaxSize);
-				return stack_[size_ - 1];
-			}
+		void push(const T& value)
+		{
+			ECLOG_ASSERT(size_ < MaxSize);
+			stack_[size_++] = value;
+		}
 
-			void push(const T& value)
-			{
-				ECLOG_ASSERT(size_ < MaxSize);
-				stack_[size_++] = value;
-			}
+		void pop()
+		{
+			ECLOG_ASSERT(size_ > 0);
+			--size_;
+		}
 
-			void pop()
-			{
-				ECLOG_ASSERT(size_ > 0);
-				--size_;
-			}
+	private:
+		T stack_[MaxSize];
 
-		private:
-			T stack_[MaxSize];
+		size_t size_;
+	};
 
-			size_t size_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	template<size_t MaxSize>
+	class ParsingBufferGuard : private NonCopyable {
+	public:
+		explicit ParsingBufferGuard(ParsingBuffer& parsingBuffer) :
+			parsingBuffer_(parsingBuffer)
+		{
+		}
 
-		template<size_t MaxSize>
-		class ParsingBufferGuard : private NonCopyable {
-		public:
-			explicit ParsingBufferGuard(ParsingBuffer& parsingBuffer) :
-				parsingBuffer_(parsingBuffer)
-			{
+		~ParsingBufferGuard()
+		{
+			clear();
+		}
+
+		void clear()
+		{
+			while (ptrs_.size()) {
+				pop();
 			}
+		}
 
-			~ParsingBufferGuard()
-			{
-				clear();
-			}
+		void push()
+		{
+			void* ptr = parsingBuffer_.claim();
 
-			void clear()
-			{
-				while (ptrs_.size()) {
-					pop();
-				}
-			}
+			ptrs_.push(ptr);
+		}
 
-			void push()
-			{
-				void* ptr = parsingBuffer_.claim();
+		void pop()
+		{
+			void* ptr = ptrs_.top();
 
-				ptrs_.push(ptr);
-			}
+			parsingBuffer_.discard(ptr);
 
-			void pop()
-			{
-				void* ptr = ptrs_.top();
+			ptrs_.pop();
+		}
 
-				parsingBuffer_.discard(ptr);
+	private:
+		ParsingBuffer& parsingBuffer_;
 
-				ptrs_.pop();
-			}
+		InlineStack<void*, MaxSize> ptrs_;
+	};
 
-		private:
-			ParsingBuffer& parsingBuffer_;
-
-			InlineStack<void*, MaxSize> ptrs_;
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #include <stddef.h> // size_t
 #include <limits.h>
 
+namespace vallest {
 namespace eclog {
-
-	namespace detail {
+namespace detail {
 
 		static void onUnexpectedChar(int line, int column, int ch, ErrorCode* ec)
 		{
@@ -3573,115 +3577,221 @@ namespace eclog {
 			ctx.endNested();
 		}
 
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #define ECLOG_NUMBER_BUFFER_SIZE 32
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	Renderer::Renderer(OutputStream& stream, const RendererConfig& rendererConfig) :
+		encoder_(stream), rc_(rendererConfig)
+	{
+		nestingLevel_ = 0;
+		indent_ = 0;
+		beginOfLine_ = true;
+		separator_ = 0;
+		inline_ = 0;
+		error_ = 0;
+	}
 
-		Renderer::Renderer(OutputStream& stream, const RendererConfig& rendererConfig) :
-			encoder_(stream), rc_(rendererConfig)
-		{
-			nestingLevel_ = 0;
-			indent_ = 0;
-			beginOfLine_ = true;
-			separator_ = 0;
-			inline_ = 0;
-			error_ = 0;
+	void Renderer::beginObject(const KeyDesc& key, ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
 		}
 
-		void Renderer::beginObject(const KeyDesc& key, ErrorCode* ec)
-		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
+		beginItem(ec);
+		ECLOG_ON_ERROR(setError(); return);
 
+		renderString(key.str(), key.notation(), key.delimiter(), ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		renderColon(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		if (rc_.formatting == RendererConfig::formatting_regular)
+		{
+			if (!rc_.placeOpenBracketOnNewLineForObjects || inline_)
+			{
+				renderSpace(ec);
+				ECLOG_ON_ERROR(setError(); return);
+			}
+			else if (rc_.placeOpenBracketOnNewLineForObjects)
+			{
+				renderLinebreak(ec);
+				ECLOG_ON_ERROR(setError(); return);
+
+				renderIndent(ec);
+				ECLOG_ON_ERROR(setError(); return);
+			}
+		}
+
+		renderLeftCurlyBracket(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		beginStruct(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		increaseNestingLevel();
+	}
+
+	void Renderer::beginObject(ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		if (nestingLevel() > 0 || rc_.encloseRootObjectWithCurlyBrackets)
+		{
 			beginItem(ec);
 			ECLOG_ON_ERROR(setError(); return);
-
-			renderString(key.str(), key.notation(), key.delimiter(), ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			renderColon(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			if (rc_.formatting == RendererConfig::formatting_regular)
-			{
-				if (!rc_.placeOpenBracketOnNewLineForObjects || inline_)
-				{
-					renderSpace(ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-				else if (rc_.placeOpenBracketOnNewLineForObjects)
-				{
-					renderLinebreak(ec);
-					ECLOG_ON_ERROR(setError(); return);
-
-					renderIndent(ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-			}
 
 			renderLeftCurlyBracket(ec);
 			ECLOG_ON_ERROR(setError(); return);
 
 			beginStruct(ec);
 			ECLOG_ON_ERROR(setError(); return);
-
-			increaseNestingLevel();
 		}
 
-		void Renderer::beginObject(ErrorCode* ec)
-		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
+		increaseNestingLevel();
+	}
 
-			if (nestingLevel() > 0 || rc_.encloseRootObjectWithCurlyBrackets)
+	void Renderer::endObject(ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		decreaseNestingLevel();
+
+		if (nestingLevel() > 0 || rc_.encloseRootObjectWithCurlyBrackets)
+		{
+			endStruct(ec);
+			ECLOG_ON_ERROR(setError(); return);
+
+			renderRightCurlyBracket(ec);
+			ECLOG_ON_ERROR(setError(); return);
+
+			endItem();
+		}
+	}
+
+	void Renderer::beginArray(const KeyDesc& key, ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		beginItem(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		renderString(key.str(), key.notation(), key.delimiter(), ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		renderColon(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		if (rc_.formatting == RendererConfig::formatting_regular)
+		{
+			if (!rc_.placeOpenBracketOnNewLineForArrays || inline_)
 			{
-				beginItem(ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				renderLeftCurlyBracket(ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				beginStruct(ec);
+				renderSpace(ec);
 				ECLOG_ON_ERROR(setError(); return);
 			}
-
-			increaseNestingLevel();
-		}
-
-		void Renderer::endObject(ErrorCode* ec)
-		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
-
-			decreaseNestingLevel();
-
-			if (nestingLevel() > 0 || rc_.encloseRootObjectWithCurlyBrackets)
+			else if (rc_.placeOpenBracketOnNewLineForArrays)
 			{
-				endStruct(ec);
+				renderLinebreak(ec);
 				ECLOG_ON_ERROR(setError(); return);
 
-				renderRightCurlyBracket(ec);
+				renderIndent(ec);
 				ECLOG_ON_ERROR(setError(); return);
-
-				endItem();
 			}
 		}
 
-		void Renderer::beginArray(const KeyDesc& key, ErrorCode* ec)
+		renderLeftSquareBracket(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		beginStruct(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		increaseNestingLevel();
+	}
+
+	void Renderer::beginArray(ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		beginItem(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		renderLeftSquareBracket(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		beginStruct(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		increaseNestingLevel();
+	}
+
+	void Renderer::endArray(ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		decreaseNestingLevel();
+
+		endStruct(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		renderRightSquareBracket(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		endItem();
+	}
+
+	void Renderer::renderMember(const KeyDesc& key, const ValueDesc& value, ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		if (value.type() == value_type_object)
 		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
+			beginObject(key, ec);
+			ECLOG_ON_ERROR(setError(); return);
+
+			for (size_t i = 0; i < value.objectSize(); ++i)
+			{
+				renderMember(value.object()[i].first, value.object()[i].second, ec);
+				ECLOG_ON_ERROR(setError(); return);
 			}
 
+			endObject(ec);
+			ECLOG_ON_ERROR(setError(); return);
+		}
+		else if (value.type() == value_type_array)
+		{
+			beginArray(key, ec);
+			ECLOG_ON_ERROR(setError(); return);
+
+			for (size_t i = 0; i < value.arraySize(); ++i)
+			{
+				renderMember(value.array()[i], ec);
+				ECLOG_ON_ERROR(setError(); return);
+			}
+
+			endArray(ec);
+			ECLOG_ON_ERROR(setError(); return);
+		}
+		else
+		{
 			beginItem(ec);
 			ECLOG_ON_ERROR(setError(); return);
 
@@ -3691,324 +3801,263 @@ namespace eclog {
 			renderColon(ec);
 			ECLOG_ON_ERROR(setError(); return);
 
-			if (rc_.formatting == RendererConfig::formatting_regular)
+			if (rc_.formatting == RendererConfig::formatting_regular && rc_.insertSpaceAfterColon)
 			{
-				if (!rc_.placeOpenBracketOnNewLineForArrays || inline_)
-				{
-					renderSpace(ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-				else if (rc_.placeOpenBracketOnNewLineForArrays)
-				{
-					renderLinebreak(ec);
-					ECLOG_ON_ERROR(setError(); return);
-
-					renderIndent(ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
+				renderSpace(ec);
+				ECLOG_ON_ERROR(setError(); return);
 			}
 
-			renderLeftSquareBracket(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			beginStruct(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			increaseNestingLevel();
-		}
-
-		void Renderer::beginArray(ErrorCode* ec)
-		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
-
-			beginItem(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			renderLeftSquareBracket(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			beginStruct(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			increaseNestingLevel();
-		}
-
-		void Renderer::endArray(ErrorCode* ec)
-		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
-
-			decreaseNestingLevel();
-
-			endStruct(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			renderRightSquareBracket(ec);
+			renderValueInternal(value, ec);
 			ECLOG_ON_ERROR(setError(); return);
 
 			endItem();
 		}
+	}
 
-		void Renderer::renderMember(const KeyDesc& key, const ValueDesc& value, ErrorCode* ec)
-		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
-
-			if (value.type() == value_type_object)
-			{
-				beginObject(key, ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				for (size_t i = 0; i < value.objectSize(); ++i)
-				{
-					renderMember(value.object()[i].first, value.object()[i].second, ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-
-				endObject(ec);
-				ECLOG_ON_ERROR(setError(); return);
-			}
-			else if (value.type() == value_type_array)
-			{
-				beginArray(key, ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				for (size_t i = 0; i < value.arraySize(); ++i)
-				{
-					renderMember(value.array()[i], ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-
-				endArray(ec);
-				ECLOG_ON_ERROR(setError(); return);
-			}
-			else
-			{
-				beginItem(ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				renderString(key.str(), key.notation(), key.delimiter(), ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				renderColon(ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				if (rc_.formatting == RendererConfig::formatting_regular && rc_.insertSpaceAfterColon)
-				{
-					renderSpace(ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-
-				renderValueInternal(value, ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				endItem();
-			}
+	void Renderer::renderMember(const ValueDesc& value, ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
 		}
 
-		void Renderer::renderMember(const ValueDesc& value, ErrorCode* ec)
+		if (value.type() == value_type_object)
 		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
-
-			if (value.type() == value_type_object)
-			{
-				beginObject(ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				for (size_t i = 0; i < value.objectSize(); ++i)
-				{
-					renderMember(value.object()[i].first, value.object()[i].second, ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-
-				endObject(ec);
-				ECLOG_ON_ERROR(setError(); return);
-			}
-			else if (value.type() == value_type_array)
-			{
-				beginArray(ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				for (size_t i = 0; i < value.arraySize(); ++i)
-				{
-					renderMember(value.array()[i], ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-
-				endArray(ec);
-				ECLOG_ON_ERROR(setError(); return);
-			}
-			else
-			{
-				beginItem(ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				renderValueInternal(value, ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				endItem();
-			}
-		}
-
-		void Renderer::renderEmptyLines(int count, ErrorCode* ec)
-		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
-
-			if (rc_.formatting == RendererConfig::formatting_compact || inline_) {
-				return;
-			}
-
-			ECLOG_ASSERT(!separator_ || separator_ == separator_linebreak);
-			renderSeparator(ec);
+			beginObject(ec);
 			ECLOG_ON_ERROR(setError(); return);
 
-			for (int i = 0; i < count; ++i)
+			for (size_t i = 0; i < value.objectSize(); ++i)
+			{
+				renderMember(value.object()[i].first, value.object()[i].second, ec);
+				ECLOG_ON_ERROR(setError(); return);
+			}
+
+			endObject(ec);
+			ECLOG_ON_ERROR(setError(); return);
+		}
+		else if (value.type() == value_type_array)
+		{
+			beginArray(ec);
+			ECLOG_ON_ERROR(setError(); return);
+
+			for (size_t i = 0; i < value.arraySize(); ++i)
+			{
+				renderMember(value.array()[i], ec);
+				ECLOG_ON_ERROR(setError(); return);
+			}
+
+			endArray(ec);
+			ECLOG_ON_ERROR(setError(); return);
+		}
+		else
+		{
+			beginItem(ec);
+			ECLOG_ON_ERROR(setError(); return);
+
+			renderValueInternal(value, ec);
+			ECLOG_ON_ERROR(setError(); return);
+
+			endItem();
+		}
+	}
+
+	void Renderer::renderEmptyLines(int count, ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		if (rc_.formatting == RendererConfig::formatting_compact || inline_) {
+			return;
+		}
+
+		ECLOG_ASSERT(!separator_ || separator_ == separator_linebreak);
+		renderSeparator(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		for (int i = 0; i < count; ++i)
+		{
+			renderLinebreak(ec);
+			ECLOG_ON_ERROR(setError(); return);
+		}
+	}
+
+	void Renderer::renderComment(cstring comment, ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		if (rc_.formatting == RendererConfig::formatting_compact || inline_ || !rc_.enableComments) {
+			return;
+		}
+
+		ECLOG_ASSERT(!separator_ || separator_ == separator_linebreak);
+		renderSeparator(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		MemoryInputStream stream(comment.data(), comment.size());
+		UTF8Decoder decoder(stream);
+
+		bool linebreak = false;
+		bool beginOfLine = true;
+
+		renderIndent(ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		renderChar('#', ec);
+		ECLOG_ON_ERROR(setError(); return);
+
+		for (;;)
+		{
+			int ch = decoder.getChar(ec);
+			ECLOG_ON_ERROR(setError(); return);
+
+			if (ch < 0) {
+				break;
+			}
+
+			if (ch == '\r')
+			{
+				ch = decoder.peekChar(ec);
+				ECLOG_ON_ERROR(setError(); return);
+
+				if (ch == '\n') {
+					decoder.getChar(0);
+				}
+
+				linebreak = true;
+			}
+			else if (ch == '\n')
+			{
+				linebreak = true;
+			}
+
+			if (linebreak)
+			{
+				renderLinebreak(ec);
+				ECLOG_ON_ERROR(setError(); return);
+
+				renderIndent(ec);
+				ECLOG_ON_ERROR(setError(); return);
+
+				renderChar('#', ec);
+				ECLOG_ON_ERROR(setError(); return);
+
+				linebreak = false;
+				beginOfLine = true;
+
+				continue;
+			}
+
+			if (beginOfLine)
+			{
+				renderSpace(ec);
+				ECLOG_ON_ERROR(setError(); return);
+
+				beginOfLine = false;
+			}
+
+			renderChar(ch, ec);
+			ECLOG_ON_ERROR(setError(); return);
+		}
+
+		renderLinebreak(ec);
+		ECLOG_ON_ERROR(setError(); return);
+	}
+
+	int Renderer::beginInline()
+	{
+		return ++inline_;
+	}
+
+	int Renderer::endInline()
+	{
+		if (--inline_ == 0)
+		{
+			if (separator_ == separator_comma)
+			{
+				if (rc_.formatting == RendererConfig::formatting_regular)
+				{
+					separator_ = separator_linebreak;
+				}
+			}
+		}
+
+		return inline_;
+	}
+
+	void Renderer::close(ErrorCode* ec)
+	{
+		if (error()) {
+			ECLOG_ERROR(IOError);
+		}
+
+		if (separator_)
+		{
+			if (separator_ == separator_linebreak)
 			{
 				renderLinebreak(ec);
 				ECLOG_ON_ERROR(setError(); return);
 			}
+
+			separator_ = 0;
 		}
+	}
 
-		void Renderer::renderComment(cstring comment, ErrorCode* ec)
+	const RendererConfig& Renderer::rendererConfig() const
+	{
+		return rc_;
+	}
+
+	void Renderer::beginItem(ErrorCode* ec)
+	{
+		renderSeparator(ec);
+		ECLOG_ON_ERROR(return);
+
+		if (beginOfLine_)
 		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
-
-			if (rc_.formatting == RendererConfig::formatting_compact || inline_ || !rc_.enableComments) {
-				return;
-			}
-
-			ECLOG_ASSERT(!separator_ || separator_ == separator_linebreak);
-			renderSeparator(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			MemoryInputStream stream(comment.data(), comment.size());
-			UTF8Decoder decoder(stream);
-
-			bool linebreak = false;
-			bool beginOfLine = true;
-
 			renderIndent(ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			renderChar('#', ec);
-			ECLOG_ON_ERROR(setError(); return);
-
-			for (;;)
-			{
-				int ch = decoder.getChar(ec);
-				ECLOG_ON_ERROR(setError(); return);
-
-				if (ch < 0) {
-					break;
-				}
-
-				if (ch == '\r')
-				{
-					ch = decoder.peekChar(ec);
-					ECLOG_ON_ERROR(setError(); return);
-
-					if (ch == '\n') {
-						decoder.getChar(0);
-					}
-
-					linebreak = true;
-				}
-				else if (ch == '\n')
-				{
-					linebreak = true;
-				}
-
-				if (linebreak)
-				{
-					renderLinebreak(ec);
-					ECLOG_ON_ERROR(setError(); return);
-
-					renderIndent(ec);
-					ECLOG_ON_ERROR(setError(); return);
-
-					renderChar('#', ec);
-					ECLOG_ON_ERROR(setError(); return);
-
-					linebreak = false;
-					beginOfLine = true;
-
-					continue;
-				}
-
-				if (beginOfLine)
-				{
-					renderSpace(ec);
-					ECLOG_ON_ERROR(setError(); return);
-
-					beginOfLine = false;
-				}
-
-				renderChar(ch, ec);
-				ECLOG_ON_ERROR(setError(); return);
-			}
-
-			renderLinebreak(ec);
-			ECLOG_ON_ERROR(setError(); return);
-		}
-
-		int Renderer::beginInline()
-		{
-			return ++inline_;
-		}
-
-		int Renderer::endInline()
-		{
-			if (--inline_ == 0)
-			{
-				if (separator_ == separator_comma)
-				{
-					if (rc_.formatting == RendererConfig::formatting_regular)
-					{
-						separator_ = separator_linebreak;
-					}
-				}
-			}
-
-			return inline_;
-		}
-
-		void Renderer::close(ErrorCode* ec)
-		{
-			if (error()) {
-				ECLOG_ERROR(IOError);
-			}
-
-			if (separator_)
-			{
-				if (separator_ == separator_linebreak)
-				{
-					renderLinebreak(ec);
-					ECLOG_ON_ERROR(setError(); return);
-				}
-
-				separator_ = 0;
-			}
-		}
-
-		const RendererConfig& Renderer::rendererConfig() const
-		{
-			return rc_;
-		}
-
-		void Renderer::beginItem(ErrorCode* ec)
-		{
-			renderSeparator(ec);
 			ECLOG_ON_ERROR(return);
+		}
+	}
+
+	void Renderer::endItem()
+	{
+		if (rc_.formatting == RendererConfig::formatting_regular && !inline_)
+		{
+			if (!beginOfLine_)
+			{
+				separator_ = separator_linebreak;
+			}
+		}
+		else
+		{
+			separator_ = separator_comma;
+		}
+	}
+
+	void Renderer::beginStruct(ErrorCode* ec)
+	{
+		if (rc_.formatting == RendererConfig::formatting_regular && !inline_)
+		{
+			renderLinebreak(ec);
+			ECLOG_ON_ERROR(return);
+		}
+
+		increaseIndent();
+	}
+
+	void Renderer::endStruct(ErrorCode* ec)
+	{
+		decreaseIndent();
+
+		if (rc_.formatting == RendererConfig::formatting_regular && !inline_)
+		{
+			if (!beginOfLine_)
+			{
+				renderLinebreak(ec);
+				ECLOG_ON_ERROR(return);
+			}
 
 			if (beginOfLine_)
 			{
@@ -4016,651 +4065,606 @@ namespace eclog {
 				ECLOG_ON_ERROR(return);
 			}
 		}
+	}
 
-		void Renderer::endItem()
+	void Renderer::renderValueInternal(const ValueDesc& value, ErrorCode* ec)
+	{
+		switch (value.type())
 		{
-			if (rc_.formatting == RendererConfig::formatting_regular && !inline_)
+		case value_type_null:
+			renderSequence("null", ec);
+			return;
+
+		case value_type_boolean:
+			if (value.boolean()) {
+				renderSequence("true", ec);
+			}
+			else {
+				renderSequence("false", ec);
+			}
+			return;
+
+		case value_type_string:
+			renderString(value.string(), value.stringNotation(), value.stringDelimiter(), ec);
+			return;
+
+		case value_type_number:
+			renderNumber(value.number(), value.fracDigits(), ec);
+			return;
+
+		default:
+			ECLOG_ASSERT(false);
+			return;
+		}
+	}
+
+	void Renderer::renderString(cstring str, StringNotation notation, cstring delimiter, ErrorCode* ec)
+	{
+		if (notation == string_notation_quoted || rc_.useQuotedStringsOnly)
+		{
+			renderQuotedString(str, ec);
+			return;
+		}
+		else if (notation == string_notation_unquoted)
+		{
+			if (str == "null" || str == "true" || str == "false" || str == "inf" || str == "nan")
 			{
-				if (!beginOfLine_)
-				{
-					separator_ = separator_linebreak;
+				renderQuotedString(str, ec);
+				return;
+			}
+
+			size_t count = 0;
+
+			for (const char* s = str.begin(); s != str.end(); ++s)
+			{
+				if (isAlpha(*s) || *s == '_' || (count && (*s == '-' || *s == '.' || isDigit(*s)))) {
+					++count;
 				}
+				else {
+					break;
+				}
+			}
+
+			if (!str.empty() && count == str.size())
+			{
+				renderUnquotedString(str, ec);
+				return;
+			}
+		}
+		else if (notation == string_notation_raw)
+		{
+			bool good = true;
+
+			for (const char* s = str.begin(); s != str.end(); ++s)
+			{
+				if (*s >= 0 && *s < 0x20 && *s != '\t')
+				{
+					good = false;
+					break;
+				}
+				else if (*s == '\"')
+				{
+					if (delimiter.empty() || cstring(s + 1, str.end()).startsWith(delimiter))
+					{
+						good = false;
+						break;
+					}
+				}
+			}
+
+			if (good)
+			{
+				renderRawString(str, delimiter, ec);
+				return;
+			}
+		}
+		else if (notation == string_notation_heredoc)
+		{
+			if (rc_.formatting == RendererConfig::formatting_compact || inline_ || delimiter.empty())
+			{
+				renderQuotedString(str, ec);
+				return;
+			}
+
+			bool good = true;
+
+			bool beginOfLine = true;
+
+			const char* s = str.begin();
+
+			while (s != str.end())
+			{
+				if (beginOfLine && (*s == ' ' || *s == '\t'))
+				{
+					++s;
+				}
+				else if (beginOfLine && cstring(s, str.end()).startsWith(delimiter))
+				{
+					s += delimiter.size();
+
+					if (s == str.end() || *s == '\r' || *s == '\n')
+					{
+						good = false;
+						break;
+					}
+				}
+				else if (*s == '\r')
+				{
+					++s;
+
+					if (s != str.end() && *s == '\n') {
+						++s;
+					}
+
+					beginOfLine = true;
+				}
+				else if (*s == '\n')
+				{
+					++s;
+					beginOfLine = true;
+				}
+				else if (*s >= 0 && *s < 0x20 && *s != '\t')
+				{
+					good = false;
+					break;
+				}
+				else
+				{
+					++s;
+					beginOfLine = false;
+				}
+			}
+
+			if (good)
+			{
+				renderHeredoc(str, delimiter, ec);
+				return;
+			}
+		}
+
+		renderQuotedString(str, ec);
+	}
+
+	void Renderer::renderQuotedString(cstring str, ErrorCode* ec)
+	{
+		MemoryInputStream stream(str.data(), str.size());
+		UTF8Decoder decoder(stream);
+
+		renderChar('"', ec);
+		ECLOG_ON_ERROR(return);
+
+		for (;;)
+		{
+			int ch = decoder.getChar(ec);
+			ECLOG_ON_ERROR(return);
+
+			if (ch < 0) {
+				break;
+			}
+
+			switch (ch)
+			{
+			case '"':
+				renderSequence("\\\"", ec);
+				ECLOG_ON_ERROR(return);
+				break;
+
+			case '\\':
+				renderSequence("\\\\", ec);
+				ECLOG_ON_ERROR(return);
+				break;
+
+			case '\b':
+				renderSequence("\\b", ec);
+				ECLOG_ON_ERROR(return);
+				break;
+
+			case '\f':
+				renderSequence("\\f", ec);
+				ECLOG_ON_ERROR(return);
+				break;
+
+			case '\n':
+				renderSequence("\\n", ec);
+				ECLOG_ON_ERROR(return);
+				break;
+
+			case '\r':
+				renderSequence("\\r", ec);
+				ECLOG_ON_ERROR(return);
+				break;
+
+			case '\t':
+				renderSequence("\\t", ec);
+				ECLOG_ON_ERROR(return);
+				break;
+
+			default:
+				if (ch < 0x20)
+				{
+					const char table[] = { '0', '1', '2', '3', '4', '5',
+						'6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
+					char buffer[6];
+
+					buffer[0] = '\\';
+					buffer[1] = 'u';
+					buffer[2] = '0';
+					buffer[3] = '0';
+					buffer[4] = table[(ch >> 4) & 0xf];
+					buffer[5] = table[ch & 0xf];
+
+					renderSequence(cstring(buffer, sizeof(buffer)), ec);
+					ECLOG_ON_ERROR(return);
+				}
+				else
+				{
+					renderChar(ch, ec);
+					ECLOG_ON_ERROR(return);
+				}
+			}
+		}
+
+		renderChar('"', ec);
+		ECLOG_ON_ERROR(return);
+	}
+
+	void Renderer::renderUnquotedString(cstring str, ErrorCode* ec)
+	{
+		renderSequence(str, ec);
+		ECLOG_ON_ERROR(return);
+	}
+
+	void Renderer::renderRawString(cstring str, cstring delimiter, ErrorCode* ec)
+	{
+		MemoryInputStream stream(str.data(), str.size());
+		UTF8Decoder decoder(stream);
+
+		renderChar('@', ec);
+		ECLOG_ON_ERROR(return);
+
+		for (const char* d = delimiter.begin(); d != delimiter.end(); ++d)
+		{
+			renderChar(*d, ec);
+			ECLOG_ON_ERROR(return);
+		}
+
+		renderChar('"', ec);
+		ECLOG_ON_ERROR(return);
+
+		for (;;)
+		{
+			int ch = decoder.getChar(ec);
+			ECLOG_ON_ERROR(return);
+
+			if (ch < 0) {
+				break;
+			}
+
+			renderChar(ch, ec);
+			ECLOG_ON_ERROR(return);
+		}
+
+		renderChar('"', ec);
+		ECLOG_ON_ERROR(return);
+
+		for (const char* d = delimiter.begin(); d != delimiter.end(); ++d)
+		{
+			renderChar(*d, ec);
+			ECLOG_ON_ERROR(return);
+		}
+	}
+
+	void Renderer::renderHeredoc(cstring str, cstring delimiter, ErrorCode* ec)
+	{
+		MemoryInputStream stream(str.data(), str.size());
+		UTF8Decoder decoder(stream);
+
+		renderChar('|', ec);
+		ECLOG_ON_ERROR(return);
+
+		for (const char* d = delimiter.begin(); d != delimiter.end(); ++d)
+		{
+			renderChar(*d, ec);
+			ECLOG_ON_ERROR(return);
+		}
+
+		renderLinebreak(ec);
+		ECLOG_ON_ERROR(return);
+
+		bool linebreak = true;
+
+		increaseIndent();
+
+		for (;;)
+		{
+			int ch = decoder.peekChar(ec);
+			ECLOG_ON_ERROR(return);
+
+			if (ch < 0) {
+				break;
+			}
+
+			if (ch == '\r')
+			{
+				decoder.getChar(0);
+
+				ch = decoder.peekChar(ec);
+				ECLOG_ON_ERROR(return);
+
+				if (ch == '\n') {
+					decoder.getChar(0);
+				}
+
+				renderLinebreak(ec);
+				ECLOG_ON_ERROR(return);
+
+				linebreak = true;
+			}
+			else if (ch == '\n')
+			{
+				decoder.getChar(0);
+
+				renderLinebreak(ec);
+				ECLOG_ON_ERROR(return);
+
+				linebreak = true;
 			}
 			else
 			{
-				separator_ = separator_comma;
-			}
-		}
-
-		void Renderer::beginStruct(ErrorCode* ec)
-		{
-			if (rc_.formatting == RendererConfig::formatting_regular && !inline_)
-			{
-				renderLinebreak(ec);
-				ECLOG_ON_ERROR(return);
-			}
-
-			increaseIndent();
-		}
-
-		void Renderer::endStruct(ErrorCode* ec)
-		{
-			decreaseIndent();
-
-			if (rc_.formatting == RendererConfig::formatting_regular && !inline_)
-			{
-				if (!beginOfLine_)
-				{
-					renderLinebreak(ec);
-					ECLOG_ON_ERROR(return);
-				}
+				decoder.getChar(0);
 
 				if (beginOfLine_)
 				{
 					renderIndent(ec);
 					ECLOG_ON_ERROR(return);
 				}
-			}
-		}
-
-		void Renderer::renderValueInternal(const ValueDesc& value, ErrorCode* ec)
-		{
-			switch (value.type())
-			{
-			case value_type_null:
-				renderSequence("null", ec);
-				return;
-
-			case value_type_boolean:
-				if (value.boolean()) {
-					renderSequence("true", ec);
-				}
-				else {
-					renderSequence("false", ec);
-				}
-				return;
-
-			case value_type_string:
-				renderString(value.string(), value.stringNotation(), value.stringDelimiter(), ec);
-				return;
-
-			case value_type_number:
-				renderNumber(value.number(), value.fracDigits(), ec);
-				return;
-
-			default:
-				ECLOG_ASSERT(false);
-				return;
-			}
-		}
-
-		void Renderer::renderString(cstring str, StringNotation notation, cstring delimiter, ErrorCode* ec)
-		{
-			if (notation == string_notation_quoted || rc_.useQuotedStringsOnly)
-			{
-				renderQuotedString(str, ec);
-				return;
-			}
-			else if (notation == string_notation_unquoted)
-			{
-				if (str == "null" || str == "true" || str == "false" || str == "inf" || str == "nan")
-				{
-					renderQuotedString(str, ec);
-					return;
-				}
-
-				size_t count = 0;
-
-				for (const char* s = str.begin(); s != str.end(); ++s)
-				{
-					if (isAlpha(*s) || *s == '_' || (count && (*s == '-' || *s == '.' || isDigit(*s)))) {
-						++count;
-					}
-					else {
-						break;
-					}
-				}
-
-				if (!str.empty() && count == str.size())
-				{
-					renderUnquotedString(str, ec);
-					return;
-				}
-			}
-			else if (notation == string_notation_raw)
-			{
-				bool good = true;
-
-				for (const char* s = str.begin(); s != str.end(); ++s)
-				{
-					if (*s >= 0 && *s < 0x20 && *s != '\t')
-					{
-						good = false;
-						break;
-					}
-					else if (*s == '\"')
-					{
-						if (delimiter.empty() || cstring(s + 1, str.end()).startsWith(delimiter))
-						{
-							good = false;
-							break;
-						}
-					}
-				}
-
-				if (good)
-				{
-					renderRawString(str, delimiter, ec);
-					return;
-				}
-			}
-			else if (notation == string_notation_heredoc)
-			{
-				if (rc_.formatting == RendererConfig::formatting_compact || inline_ || delimiter.empty())
-				{
-					renderQuotedString(str, ec);
-					return;
-				}
-
-				bool good = true;
-
-				bool beginOfLine = true;
-
-				const char* s = str.begin();
-
-				while (s != str.end())
-				{
-					if (beginOfLine && (*s == ' ' || *s == '\t'))
-					{
-						++s;
-					}
-					else if (beginOfLine && cstring(s, str.end()).startsWith(delimiter))
-					{
-						s += delimiter.size();
-
-						if (s == str.end() || *s == '\r' || *s == '\n')
-						{
-							good = false;
-							break;
-						}
-					}
-					else if (*s == '\r')
-					{
-						++s;
-
-						if (s != str.end() && *s == '\n') {
-							++s;
-						}
-
-						beginOfLine = true;
-					}
-					else if (*s == '\n')
-					{
-						++s;
-						beginOfLine = true;
-					}
-					else if (*s >= 0 && *s < 0x20 && *s != '\t')
-					{
-						good = false;
-						break;
-					}
-					else
-					{
-						++s;
-						beginOfLine = false;
-					}
-				}
-
-				if (good)
-				{
-					renderHeredoc(str, delimiter, ec);
-					return;
-				}
-			}
-
-			renderQuotedString(str, ec);
-		}
-
-		void Renderer::renderQuotedString(cstring str, ErrorCode* ec)
-		{
-			MemoryInputStream stream(str.data(), str.size());
-			UTF8Decoder decoder(stream);
-
-			renderChar('"', ec);
-			ECLOG_ON_ERROR(return);
-
-			for (;;)
-			{
-				int ch = decoder.getChar(ec);
-				ECLOG_ON_ERROR(return);
-
-				if (ch < 0) {
-					break;
-				}
-
-				switch (ch)
-				{
-				case '"':
-					renderSequence("\\\"", ec);
-					ECLOG_ON_ERROR(return);
-					break;
-
-				case '\\':
-					renderSequence("\\\\", ec);
-					ECLOG_ON_ERROR(return);
-					break;
-
-				case '\b':
-					renderSequence("\\b", ec);
-					ECLOG_ON_ERROR(return);
-					break;
-
-				case '\f':
-					renderSequence("\\f", ec);
-					ECLOG_ON_ERROR(return);
-					break;
-
-				case '\n':
-					renderSequence("\\n", ec);
-					ECLOG_ON_ERROR(return);
-					break;
-
-				case '\r':
-					renderSequence("\\r", ec);
-					ECLOG_ON_ERROR(return);
-					break;
-
-				case '\t':
-					renderSequence("\\t", ec);
-					ECLOG_ON_ERROR(return);
-					break;
-
-				default:
-					if (ch < 0x20)
-					{
-						const char table[] = { '0', '1', '2', '3', '4', '5',
-							'6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-
-						char buffer[6];
-
-						buffer[0] = '\\';
-						buffer[1] = 'u';
-						buffer[2] = '0';
-						buffer[3] = '0';
-						buffer[4] = table[(ch >> 4) & 0xf];
-						buffer[5] = table[ch & 0xf];
-
-						renderSequence(cstring(buffer, sizeof(buffer)), ec);
-						ECLOG_ON_ERROR(return);
-					}
-					else
-					{
-						renderChar(ch, ec);
-						ECLOG_ON_ERROR(return);
-					}
-				}
-			}
-
-			renderChar('"', ec);
-			ECLOG_ON_ERROR(return);
-		}
-
-		void Renderer::renderUnquotedString(cstring str, ErrorCode* ec)
-		{
-			renderSequence(str, ec);
-			ECLOG_ON_ERROR(return);
-		}
-
-		void Renderer::renderRawString(cstring str, cstring delimiter, ErrorCode* ec)
-		{
-			MemoryInputStream stream(str.data(), str.size());
-			UTF8Decoder decoder(stream);
-
-			renderChar('@', ec);
-			ECLOG_ON_ERROR(return);
-
-			for (const char* d = delimiter.begin(); d != delimiter.end(); ++d)
-			{
-				renderChar(*d, ec);
-				ECLOG_ON_ERROR(return);
-			}
-
-			renderChar('"', ec);
-			ECLOG_ON_ERROR(return);
-
-			for (;;)
-			{
-				int ch = decoder.getChar(ec);
-				ECLOG_ON_ERROR(return);
-
-				if (ch < 0) {
-					break;
-				}
 
 				renderChar(ch, ec);
 				ECLOG_ON_ERROR(return);
-			}
 
-			renderChar('"', ec);
-			ECLOG_ON_ERROR(return);
-
-			for (const char* d = delimiter.begin(); d != delimiter.end(); ++d)
-			{
-				renderChar(*d, ec);
-				ECLOG_ON_ERROR(return);
+				linebreak = false;
 			}
 		}
 
-		void Renderer::renderHeredoc(cstring str, cstring delimiter, ErrorCode* ec)
+		if (!linebreak)
 		{
-			MemoryInputStream stream(str.data(), str.size());
-			UTF8Decoder decoder(stream);
-
-			renderChar('|', ec);
-			ECLOG_ON_ERROR(return);
-
-			for (const char* d = delimiter.begin(); d != delimiter.end(); ++d)
-			{
-				renderChar(*d, ec);
-				ECLOG_ON_ERROR(return);
-			}
-
 			renderLinebreak(ec);
 			ECLOG_ON_ERROR(return);
+		}
 
-			bool linebreak = true;
+		renderIndent(ec);
+		ECLOG_ON_ERROR(return);
 
-			increaseIndent();
+		for (const char* d = delimiter.begin(); d != delimiter.end(); ++d)
+		{
+			renderChar(*d, ec);
+			ECLOG_ON_ERROR(return);
+		}
 
-			for (;;)
-			{
-				int ch = decoder.peekChar(ec);
-				ECLOG_ON_ERROR(return);
+		renderLinebreak(ec);
+		ECLOG_ON_ERROR(return);
 
-				if (ch < 0) {
-					break;
-				}
+		decreaseIndent();
+	}
 
-				if (ch == '\r')
-				{
-					decoder.getChar(0);
+	void Renderer::renderNumber(const Number& number, int fracDigits, ErrorCode* ec)
+	{
+		char buffer[ECLOG_NUMBER_BUFFER_SIZE];
 
-					ch = decoder.peekChar(ec);
-					ECLOG_ON_ERROR(return);
+		switch (number.underlyingType())
+		{
+		case Number::underlying_type_double:
+			doubleToString(number.load<double>(), buffer, fracDigits);
+			break;
 
-					if (ch == '\n') {
-						decoder.getChar(0);
-					}
+		case Number::underlying_type_int:
+			integerToString(number.load<int>(), buffer);
+			break;
 
-					renderLinebreak(ec);
-					ECLOG_ON_ERROR(return);
+		case Number::underlying_type_uint:
+			integerToString(number.load<unsigned int>(), buffer);
+			break;
 
-					linebreak = true;
-				}
-				else if (ch == '\n')
-				{
-					decoder.getChar(0);
+		case Number::underlying_type_long:
+			integerToString(number.load<long>(), buffer);
+			break;
 
-					renderLinebreak(ec);
-					ECLOG_ON_ERROR(return);
+		case Number::underlying_type_ulong:
+			integerToString(number.load<unsigned long>(), buffer);
+			break;
 
-					linebreak = true;
-				}
-				else
-				{
-					decoder.getChar(0);
+		case Number::underlying_type_llong:
+			integerToString(number.load<long long>(), buffer);
+			break;
 
-					if (beginOfLine_)
-					{
-						renderIndent(ec);
-						ECLOG_ON_ERROR(return);
-					}
+		case Number::underlying_type_ullong:
+			integerToString(number.load<unsigned long long>(), buffer);
+			break;
 
-					renderChar(ch, ec);
-					ECLOG_ON_ERROR(return);
+		default:
+			ECLOG_ASSERT(false);
+			break;
+		}
 
-					linebreak = false;
-				}
-			}
+		cstring s = buffer;
 
-			if (!linebreak)
-			{
-				renderLinebreak(ec);
-				ECLOG_ON_ERROR(return);
-			}
+		if (number.underlyingType() == Number::underlying_type_double &&
+			rc_.useStringsToRepresentInfinitiesAndNaNs &&
+			(s.endsWith("inf") || s.endsWith("nan")))
+		{
+			renderString(s, string_notation_quoted, "", ec);
+		}
+		else
+		{
+			renderSequence(s, ec);
+		}
+	}
 
-			renderIndent(ec);
+	void Renderer::renderLinebreak(ErrorCode* ec)
+	{
+		switch (rc_.linebreak)
+		{
+		case CR:
+			encoder_.putChar('\r', ec);
+			ECLOG_ON_ERROR(return);
+			break;
+
+		case LF:
+			encoder_.putChar('\n', ec);
+			ECLOG_ON_ERROR(return);
+			break;
+
+		case CRLF:
+			encoder_.putChar('\r', ec);
 			ECLOG_ON_ERROR(return);
 
-			for (const char* d = delimiter.begin(); d != delimiter.end(); ++d)
-			{
-				renderChar(*d, ec);
-				ECLOG_ON_ERROR(return);
-			}
-
-			renderLinebreak(ec);
+			encoder_.putChar('\n', ec);
 			ECLOG_ON_ERROR(return);
-
-			decreaseIndent();
+			break;
 		}
 
-		void Renderer::renderNumber(const Number& number, int fracDigits, ErrorCode* ec)
+		beginOfLine_ = true;
+	}
+
+	void Renderer::renderIndent(ErrorCode* ec)
+	{
+		char ch = rc_.indentCharacter == RendererConfig::indent_character_tab ? '\t' : ' ';
+
+		for (int i = 0; i < indent(); ++i)
 		{
-			char buffer[ECLOG_NUMBER_BUFFER_SIZE];
-
-			switch (number.underlyingType())
+			for (int j = 0; j < rc_.indentSize; ++j)
 			{
-			case Number::underlying_type_double:
-				doubleToString(number.load<double>(), buffer, fracDigits);
-				break;
-
-			case Number::underlying_type_int:
-				integerToString(number.load<int>(), buffer);
-				break;
-
-			case Number::underlying_type_uint:
-				integerToString(number.load<unsigned int>(), buffer);
-				break;
-
-			case Number::underlying_type_long:
-				integerToString(number.load<long>(), buffer);
-				break;
-
-			case Number::underlying_type_ulong:
-				integerToString(number.load<unsigned long>(), buffer);
-				break;
-
-			case Number::underlying_type_llong:
-				integerToString(number.load<long long>(), buffer);
-				break;
-
-			case Number::underlying_type_ullong:
-				integerToString(number.load<unsigned long long>(), buffer);
-				break;
-
-			default:
-				ECLOG_ASSERT(false);
-				break;
-			}
-
-			cstring s = buffer;
-
-			if (number.underlyingType() == Number::underlying_type_double &&
-				rc_.useStringsToRepresentInfinitiesAndNaNs &&
-				(s.endsWith("inf") || s.endsWith("nan")))
-			{
-				renderString(s, string_notation_quoted, "", ec);
-			}
-			else
-			{
-				renderSequence(s, ec);
+				renderChar(ch, ec);
+				ECLOG_ON_ERROR(return);
 			}
 		}
+	}
 
-		void Renderer::renderLinebreak(ErrorCode* ec)
+	void Renderer::renderSeparator(ErrorCode* ec)
+	{
+		if (separator_ == separator_linebreak)
 		{
-			switch (rc_.linebreak)
-			{
-			case CR:
-				encoder_.putChar('\r', ec);
-				ECLOG_ON_ERROR(return);
-				break;
-
-			case LF:
-				encoder_.putChar('\n', ec);
-				ECLOG_ON_ERROR(return);
-				break;
-
-			case CRLF:
-				encoder_.putChar('\r', ec);
-				ECLOG_ON_ERROR(return);
-
-				encoder_.putChar('\n', ec);
-				ECLOG_ON_ERROR(return);
-				break;
-			}
-
-			beginOfLine_ = true;
-		}
-
-		void Renderer::renderIndent(ErrorCode* ec)
-		{
-			char ch = rc_.indentCharacter == RendererConfig::indent_character_tab ? '\t' : ' ';
-
-			for (int i = 0; i < indent(); ++i)
-			{
-				for (int j = 0; j < rc_.indentSize; ++j)
-				{
-					renderChar(ch, ec);
-					ECLOG_ON_ERROR(return);
-				}
-			}
-		}
-
-		void Renderer::renderSeparator(ErrorCode* ec)
-		{
-			if (separator_ == separator_linebreak)
-			{
-				if (rc_.useCommasToSeparateItems)
-				{
-					renderComma(ec);
-					ECLOG_ON_ERROR(return);
-				}
-
-				renderLinebreak(ec);
-				ECLOG_ON_ERROR(return);
-
-				separator_ = 0;
-			}
-			else if (separator_ == separator_comma)
+			if (rc_.useCommasToSeparateItems)
 			{
 				renderComma(ec);
 				ECLOG_ON_ERROR(return);
-
-				if (rc_.formatting == RendererConfig::formatting_regular)
-				{
-					renderSpace(ec);
-					ECLOG_ON_ERROR(return);
-				}
-
-				separator_ = 0;
 			}
-		}
 
-		void Renderer::renderSpace(ErrorCode* ec)
-		{
-			renderChar(' ', ec);
-		}
-
-		void Renderer::renderLeftCurlyBracket(ErrorCode* ec)
-		{
-			renderChar('{', ec);
-		}
-
-		void Renderer::renderRightCurlyBracket(ErrorCode* ec)
-		{
-			renderChar('}', ec);
-		}
-
-		void Renderer::renderLeftSquareBracket(ErrorCode* ec)
-		{
-			renderChar('[', ec);
-		}
-
-		void Renderer::renderRightSquareBracket(ErrorCode* ec)
-		{
-			renderChar(']', ec);
-		}
-
-		void Renderer::renderColon(ErrorCode* ec)
-		{
-			renderChar(':', ec);
-		}
-
-		void Renderer::renderComma(ErrorCode* ec)
-		{
-			renderChar(',', ec);
-		}
-
-		void Renderer::renderSequence(cstring s, ErrorCode* ec)
-		{
-			for (const char* p = s.begin(); p != s.end(); ++p)
-			{
-				renderChar(*p, ec);
-				ECLOG_ON_ERROR(return);
-			}
-		}
-
-		void Renderer::renderChar(int ch, ErrorCode* ec)
-		{
-			encoder_.putChar(ch, ec);
+			renderLinebreak(ec);
 			ECLOG_ON_ERROR(return);
 
-			beginOfLine_ = false;
+			separator_ = 0;
 		}
-
-		void Renderer::increaseNestingLevel()
+		else if (separator_ == separator_comma)
 		{
-			++nestingLevel_;
-		}
+			renderComma(ec);
+			ECLOG_ON_ERROR(return);
 
-		void Renderer::decreaseNestingLevel()
+			if (rc_.formatting == RendererConfig::formatting_regular)
+			{
+				renderSpace(ec);
+				ECLOG_ON_ERROR(return);
+			}
+
+			separator_ = 0;
+		}
+	}
+
+	void Renderer::renderSpace(ErrorCode* ec)
+	{
+		renderChar(' ', ec);
+	}
+
+	void Renderer::renderLeftCurlyBracket(ErrorCode* ec)
+	{
+		renderChar('{', ec);
+	}
+
+	void Renderer::renderRightCurlyBracket(ErrorCode* ec)
+	{
+		renderChar('}', ec);
+	}
+
+	void Renderer::renderLeftSquareBracket(ErrorCode* ec)
+	{
+		renderChar('[', ec);
+	}
+
+	void Renderer::renderRightSquareBracket(ErrorCode* ec)
+	{
+		renderChar(']', ec);
+	}
+
+	void Renderer::renderColon(ErrorCode* ec)
+	{
+		renderChar(':', ec);
+	}
+
+	void Renderer::renderComma(ErrorCode* ec)
+	{
+		renderChar(',', ec);
+	}
+
+	void Renderer::renderSequence(cstring s, ErrorCode* ec)
+	{
+		for (const char* p = s.begin(); p != s.end(); ++p)
 		{
-			--nestingLevel_;
+			renderChar(*p, ec);
+			ECLOG_ON_ERROR(return);
 		}
+	}
 
-		int Renderer::nestingLevel() const
-		{
-			return nestingLevel_;
-		}
+	void Renderer::renderChar(int ch, ErrorCode* ec)
+	{
+		encoder_.putChar(ch, ec);
+		ECLOG_ON_ERROR(return);
 
-		void Renderer::increaseIndent()
-		{
-			++indent_;
-		}
+		beginOfLine_ = false;
+	}
 
-		void Renderer::decreaseIndent()
-		{
-			--indent_;
-		}
+	void Renderer::increaseNestingLevel()
+	{
+		++nestingLevel_;
+	}
 
-		int Renderer::indent() const
-		{
-			return indent_;
-		}
+	void Renderer::decreaseNestingLevel()
+	{
+		--nestingLevel_;
+	}
 
-		void Renderer::setError(int error)
-		{
-			error_ = error;
-		}
+	int Renderer::nestingLevel() const
+	{
+		return nestingLevel_;
+	}
 
-		int Renderer::error() const
-		{
-			return error_;
-		}
+	void Renderer::increaseIndent()
+	{
+		++indent_;
+	}
 
-	} // detail
+	void Renderer::decreaseIndent()
+	{
+		--indent_;
+	}
 
+	int Renderer::indent() const
+	{
+		return indent_;
+	}
+
+	void Renderer::setError(int error)
+	{
+		error_ = error;
+	}
+
+	int Renderer::error() const
+	{
+		return error_;
+	}
+
+} // detail
 } // eclog
+} // vallest
 
 

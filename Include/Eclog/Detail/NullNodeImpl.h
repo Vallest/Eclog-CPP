@@ -8,34 +8,34 @@
 #include <Eclog/NullNode.h>
 #include <Eclog/Detail/NonCopyable.h>
 
+namespace vallest {
 namespace eclog {
+namespace detail {
 
-	namespace detail {
+	class NullNodeImpl : public NullNode, private NonCopyable {
+	public:
+		virtual NodeType nodeType() const ECLOG_OVERRIDE
+		{
+			return node_type_null;
+		}
 
-		class NullNodeImpl : public NullNode, private NonCopyable {
-		public:
-			virtual NodeType nodeType() const ECLOG_OVERRIDE
-			{
-				return node_type_null;
-			}
+		virtual Null value() const ECLOG_OVERRIDE
+		{
+			return null;
+		}
 
-			virtual Null value() const ECLOG_OVERRIDE
-			{
-				return null;
-			}
+		virtual void assign(const Null&) ECLOG_OVERRIDE
+		{
+		}
 
-			virtual void assign(const Null&) ECLOG_OVERRIDE
-			{
-			}
+		virtual void assign(const NullNode&) ECLOG_OVERRIDE
+		{
+		}
+	};
 
-			virtual void assign(const NullNode&) ECLOG_OVERRIDE
-			{
-			}
-		};
-
-	} // detail
-
+} // detail
 } // eclog
+} // vallest
 
 #endif // ECLOG_CPP_DETAIL_NULLNODEIMPL_H_
 
