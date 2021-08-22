@@ -10,6 +10,8 @@
 #include <Eclog/cstring.h>
 #include <Eclog/StringNotation.h>
 
+#include <string>
+
 namespace vallest {
 namespace eclog {
 
@@ -26,6 +28,8 @@ namespace eclog {
 		virtual void setDelimiter(cstring delimiter) = 0;
 		virtual void setDelimiter(cstring delimiter, ErrorCode& ec) = 0;
 		virtual cstring delimiter() const = 0;
+
+		virtual std::string toStdString() const = 0;
 
 		virtual void assign(const StringDesc& desc) = 0;
 		virtual void assign(const StringNode& other) = 0;

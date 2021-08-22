@@ -19,6 +19,7 @@ The [StringNode](StringNode.md) abstract class represents a string node in a doc
 | [notation](#notation) | Gets the string notation to be used when rendering the string. |
 | [setDelimiter](#setdelimiter) | Sets the string delimiter to be used when rendering the string. |
 | [delimiter](#delimiter) | Gets the string delimiter to be used when rendering the string. |
+| [toStdString](#tostdstring) | Returns the value as a C++ string. |
 | [assign](#assign) | Assigns a new value to this node. |
 
 * * *
@@ -97,6 +98,20 @@ Gets the string delimiter to be used when rendering the string.
 #### Return value
 
 [cstring](cstring.md) The string delimiter.
+
+* * *
+
+### toStdString
+
+```c++
+std::string toStdString() const;
+```
+
+Returns the value as a C++ string.
+
+#### Return value
+
+`std::string` The value as a C++ string.
 
 * * *
 

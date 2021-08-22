@@ -70,6 +70,11 @@ namespace detail {
 			return delimiter_.str();
 		}
 
+		virtual std::string toStdString() const ECLOG_OVERRIDE
+		{
+			return std::string(value_.data(), value_.size());
+		}
+
 		virtual void assign(const StringDesc& desc) ECLOG_OVERRIDE
 		{
 			ByteArray<Alloc> value(desc.string());

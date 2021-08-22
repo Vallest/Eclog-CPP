@@ -1471,6 +1471,7 @@ TEST_CASE("Document")
 		CHECK(doc.getOrAddObject("obj").findNull("null") != doc.getOrAddObject("obj").end());
 		CHECK(doc.getOrAddObject("obj").getBoolean("boolean").value() == true);
 		CHECK(doc.getOrAddObject("obj").getString("str").value() == "Hello");
+		CHECK(doc.getOrAddObject("obj").getString("str").toStdString() == "Hello");
 		CHECK(doc.getOrAddObject("obj").getNumber("number").value().underlyingType() == eclog::Number::underlying_type_double);
 		CHECK(doc.getOrAddObject("obj").getNumber("number").valueDouble() == 0.0);
 		CHECK(doc.getOrAddObject("obj").getObject("object").contains("null"));
