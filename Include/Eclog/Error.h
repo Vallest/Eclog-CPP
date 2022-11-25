@@ -198,7 +198,7 @@ namespace eclog {
 	public:
 		virtual const char* what() const ECLOG_NOTHROW
 		{
-			return getErrorMessage(ec_out_of_range);
+			return getErrorMessage(ec_out_of_memory);
 		}
 	};
 
